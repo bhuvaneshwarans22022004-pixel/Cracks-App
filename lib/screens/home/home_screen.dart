@@ -2,9 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/product_provider.dart';
 import '../../providers/cart_provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/wishlist_provider.dart';
 import '../../widgets/product_card.dart';
 import '../cart/cart_screen.dart';
 import '../enquiry/wholesale_enquiry_screen.dart';
+import '../profile/profile_screen.dart';
+import '../wishlist/wishlist_screen.dart';
+import '../order/order_history_screen.dart';
+import '../notifications/notification_screen.dart';
+import '../settings/settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -29,15 +36,25 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("FestiveKart"),
+        title: Image.network(
+          'https://i.imgur.com/G2yS9wX.png', // Placeholder for logo
+          height: 30,
+          errorBuilder: (_, __, ___) => const Text("FestiveKart", style: TextStyle(color: Color(0xFFFF8C00))),
+        ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications_none),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationScreen())),
+          ),
+          IconButton(
+            icon: const Icon(Icons.favorite_border),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WishlistScreen())),
+          ),
           Stack(
             children: [
               IconButton(
                 icon: const Icon(Icons.shopping_cart_outlined),
-                onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const CartScreen()));
-                },
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CartScreen())),
               ),
               if (cart.itemCount > 0)
                 Positioned(
@@ -47,60 +64,96 @@ class _HomeScreenState extends State<HomeScreen> {
                     padding: const EdgeInsets.all(2),
                     decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(10)),
                     constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-                    child: Text(
-                      '${cart.itemCount}',
-                      style: const TextStyle(color: Colors.white, fontSize: 10),
-                      textAlign: TextAlign.center,
-                    ),
+                    child: Text('${cart.itemCount}', style: const TextStyle(color: Colors.white, fontSize: 10), textAlign: TextAlign.center),
                   ),
                 ),
             ],
           ),
         ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(60),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: "Search for crackers, gifts...",
+                prefixIcon: const Icon(Icons.search),
+                filled: true,
+                fillColor: Colors.grey[100],
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              ),
+            ),
+          ),
+        ),
       ),
       drawer: Drawer(
-        backgroundColor: const Color(0xFF121212),
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(color: Color(0xFFFF8C00)),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.celebration, size: 50, color: Colors.white),
-                  SizedBox(height: 10),
-                  Text("FestiveKart", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                ],
-              ),
+            Consumer<AuthProvider>(
+              builder: (context, auth, _) {
+                final user = auth.user;
+                return UserAccountsDrawerHeader(
+                  decoration: const BoxDecoration(color: Color(0xFFFF8C00)),
+                  currentAccountPicture: const CircleAvatar(
+                    backgroundColor: Colors.white,
+                    child: Icon(Icons.person, color: Color(0xFFFF8C00)),
+                  ),
+                  accountName: Text(user?.name ?? "Guest User"),
+                  accountEmail: Text(user?.email ?? "Login to see more"),
+                );
+              },
             ),
             ListTile(
-              leading: const Icon(Icons.home),
+              leading: const Icon(Icons.home_outlined),
               title: const Text("Home"),
               onTap: () => Navigator.pop(context),
             ),
             ListTile(
-              leading: const Icon(Icons.business),
-              title: const Text("Wholesale Enquiry"),
+              leading: const Icon(Icons.notifications_outlined),
+              title: const Text("Notifications"),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const WholesaleEnquiryScreen()));
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationScreen()));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.favorite_outline),
+              title: const Text("Wishlist"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const WishlistScreen()));
               },
             ),
             ListTile(
               leading: const Icon(Icons.history),
               title: const Text("Order History"),
               onTap: () {
-                // Navigate to Order History
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const OrderHistoryScreen()));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.person_outline),
+              title: const Text("Profile"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings_outlined),
+              title: const Text("Settings"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
               },
             ),
             const Divider(),
             ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text("Logout"),
-              onTap: () {
-                // Handle logout
-              },
+              leading: const Icon(Icons.logout, color: Colors.red),
+              title: const Text("Logout", style: TextStyle(color: Colors.red)),
+              onTap: () => Provider.of<AuthProvider>(context, listen: false).logout(),
             ),
           ],
         ),
@@ -108,66 +161,81 @@ class _HomeScreenState extends State<HomeScreen> {
       body: RefreshIndicator(
         onRefresh: () => productProvider.fetchProducts(),
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(colors: [Color(0xFFFF8C00), Color(0xFFFFD700)]),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("Diwali Sale is Live!", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
-                    SizedBox(height: 5),
-                    Text("Up to 50% Off on Crackers", style: TextStyle(fontSize: 16, color: Colors.white)),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 30),
-              const Text(
-                "Popular Categories",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 15),
+              const SizedBox(height: 10),
               SizedBox(
                 height: 100,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   children: [
-                    _categoryItem("Crackers", Icons.celebration),
-                    _categoryItem("Gifts", Icons.card_giftcard),
-                    _categoryItem("Decor", Icons.lightbulb),
-                    _categoryItem("Sweets", Icons.restaurant),
+                    _categoryItem("Crackers", Icons.celebration, Colors.orange),
+                    _categoryItem("Gifts", Icons.card_giftcard, Colors.red),
+                    _categoryItem("Decor", Icons.lightbulb, Colors.yellow[700]!),
+                    _categoryItem("Sweets", Icons.restaurant, Colors.pink),
+                    _categoryItem("Wholesale", Icons.business, Colors.blue),
                   ],
                 ),
               ),
-              const SizedBox(height: 30),
-              const Text(
-                "Diwali Specials",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
               const SizedBox(height: 20),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(15),
+                  child: AspectRatio(
+                    aspectRatio: 2.5,
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(colors: [Color(0xFFFF8C00), Color(0xFFFFD700)]),
+                      ),
+                      child: const Stack(
+                        children: [
+                          Positioned(
+                            right: -20,
+                            top: -20,
+                            child: Icon(Icons.celebration, size: 150, color: Colors.white12),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.all(20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text("MEGA DIWALI SALE", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                                Text("Get Flat 50% OFF", style: TextStyle(color: Colors.white, fontSize: 16)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 30),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Text("Deals of the Day", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(height: 15),
               productProvider.isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : GridView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
                         childAspectRatio: 0.75,
-                        crossAxisSpacing: 15,
-                        mainAxisSpacing: 15,
+                        crossAxisSpacing: 10,
+                        mainAxisSpacing: 10,
                       ),
                       itemCount: productProvider.products.length,
-                      itemBuilder: (context, index) {
-                        return ProductCard(product: productProvider.products[index]);
-                      },
+                      itemBuilder: (context, index) => ProductCard(product: productProvider.products[index]),
                     ),
+              const SizedBox(height: 20),
             ],
           ),
         ),
@@ -175,22 +243,22 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _categoryItem(String name, IconData icon) {
-    return Container(
-      width: 80,
-      margin: const EdgeInsets.only(right: 15),
-      decoration: BoxDecoration(
-        color: Colors.white10,
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: const Color(0xFFFFD700)),
-          const SizedBox(height: 5),
-          Text(name, style: const TextStyle(fontSize: 12)),
-        ],
-      ),
+  Widget _categoryItem(String name, IconData icon, Color color) {
+    return Column(
+      children: [
+        Container(
+          width: 60,
+          height: 60,
+          margin: const EdgeInsets.symmetric(horizontal: 8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: color, size: 30),
+        ),
+        const SizedBox(height: 5),
+        Text(name, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+      ],
     );
   }
 }

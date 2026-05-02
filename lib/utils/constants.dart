@@ -1,5 +1,5 @@
 class AppConstants {
-  static const String baseUrl = 'http://localhost:5000/api'; // Use 10.0.2.2 for Android Emulator
+  static const String baseUrl = 'https://cracks-r4uh.onrender.com/api'; // Use 10.0.2.2 for Android Emulator
   static const String appName = 'FestiveKart';
   
   // Colors

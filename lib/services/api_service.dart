@@ -23,4 +23,15 @@ class ApiService {
       body: jsonEncode(body),
     );
   }
+
+  static Future<http.Response> put(String endpoint, Map<String, dynamic> body, {String? token}) async {
+    return await http.put(
+      Uri.parse('${AppConstants.baseUrl}/$endpoint'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode(body),
+    );
+  }
 }

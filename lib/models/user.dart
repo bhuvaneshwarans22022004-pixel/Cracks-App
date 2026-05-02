@@ -19,10 +19,10 @@ class User {
 
   factory User.fromJson(Map<String, dynamic> json, {String? token}) {
     return User(
-      id: json['_id'],
-      name: json['name'],
-      email: json['email'],
-      phone: json['phone'],
+      id: json['_id'] ?? json['id'] ?? '',
+      name: json['name'] ?? '',
+      email: json['email'] ?? '',
+      phone: json['phone'] ?? '',
       role: json['role'] ?? 'user',
       loyaltyPoints: json['loyaltyPoints'] ?? 0,
       token: token ?? json['token'],

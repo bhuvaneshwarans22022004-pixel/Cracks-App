@@ -11,7 +11,10 @@ class AuthService {
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      return User.fromJson(data['user'], token: data['token']);
+      final userJson = data['user'] ?? data;
+      return User.fromJson(userJson, token: data['token']);
+    } else {
+      print('Login failed: ${response.statusCode} - ${response.body}');
     }
     return null;
   }
@@ -26,7 +29,30 @@ class AuthService {
 
     if (response.statusCode == 201) {
       final data = jsonDecode(response.body);
-      return User.fromJson(data['user'], token: data['token']);
+      final userJson = data['user'] ?? data;
+      return User.fromJson(userJson, token: data['token']);
+    } else {
+      print('Registration failed: ${response.statusCode} - ${response.body}');
+    }
+    return null;
+  }
+
+  Future<User?> updateProfile(String name, String phone, String token) async {
+    final response = await ApiService.put(
+      'auth/profile',
+      {
+        'name': name,
+        'phone': phone,
+      },
+      token: token,
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final userJson = data['user'] ?? data;
+      return User.fromJson(userJson, token: token);
+    } else {
+      print('Profile update failed: ${response.statusCode} - ${response.body}');
     }
     return null;
   }

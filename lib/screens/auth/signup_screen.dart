@@ -80,10 +80,45 @@ class _SignupScreenState extends State<SignupScreen> {
               width: double.infinity,
               height: 55,
               child: ElevatedButton(
-                onPressed: () {
-                  // Handle registration
+                onPressed: context.watch<AuthProvider>().isLoading 
+                ? null 
+                : () async {
+                  if (_nameController.text.isEmpty || 
+                      _emailController.text.isEmpty || 
+                      _passwordController.text.isEmpty || 
+                      _phoneController.text.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Please fill all fields"))
+                    );
+                    return;
+                  }
+
+                  final success = await context.read<AuthProvider>().register(
+                    _nameController.text,
+                    _emailController.text,
+                    _passwordController.text,
+                    _phoneController.text,
+                  );
+
+                  if (success) {
+                    if (mounted) {
+                      Navigator.pop(context);
+                    }
+                  } else {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Registration failed. Please try again."))
+                      );
+                    }
+                  }
                 },
-                child: const Text("Create Account", style: TextStyle(fontSize: 18)),
+                child: context.watch<AuthProvider>().isLoading
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                  )
+                : const Text("Create Account", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               ),
             ),
           ],

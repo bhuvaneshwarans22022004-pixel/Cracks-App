@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/cart_provider.dart';
+import '../checkout/checkout_screen.dart';
 
 class CartScreen extends StatelessWidget {
   const CartScreen({super.key});
@@ -16,9 +17,9 @@ class CartScreen extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.shopping_cart_outlined, size: 100, color: Colors.white24),
+                  Icon(Icons.shopping_cart_outlined, size: 100, color: Colors.grey[300]),
                   const SizedBox(height: 20),
-                  const Text("Your cart is empty", style: TextStyle(fontSize: 18, color: Colors.white54)),
+                  Text("Your cart is empty", style: TextStyle(fontSize: 18, color: Colors.grey[600])),
                   const SizedBox(height: 20),
                   ElevatedButton(
                     onPressed: () => Navigator.pop(context),
@@ -35,44 +36,48 @@ class CartScreen extends StatelessWidget {
                     itemCount: cart.items.length,
                     itemBuilder: (context, index) {
                       final item = cart.items.values.toList()[index];
-                      return Container(
+                      return Card(
                         margin: const EdgeInsets.only(bottom: 15),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white10,
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        child: Row(
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
-                              child: Image.network(
-                                item.product.image,
-                                width: 70,
-                                height: 70,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => const Icon(Icons.celebration),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: Image.network(
+                                  item.product.image,
+                                  width: 70,
+                                  height: 70,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => const Icon(Icons.celebration),
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 15),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                              const SizedBox(width: 15),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(item.product.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                    const SizedBox(height: 5),
+                                    Text("₹${item.product.price}", style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  ],
+                                ),
+                              ),
+                              Row(
                                 children: [
-                                  Text(item.product.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                                  const SizedBox(height: 5),
-                                  Text("₹${item.product.price}", style: const TextStyle(color: Color(0xFFFFD700))),
+                                  IconButton(
+                                    icon: const Icon(Icons.remove_circle_outline), 
+                                    onPressed: () => cart.removeItem(item.product.id),
+                                  ),
+                                  Text('${item.quantity}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  IconButton(
+                                    icon: const Icon(Icons.add_circle_outline), 
+                                    onPressed: () => cart.addItem(item.product),
+                                  ),
                                 ],
                               ),
-                            ),
-                            Row(
-                              children: [
-                                IconButton(icon: const Icon(Icons.remove_circle_outline), onPressed: () {}),
-                                Text('${item.quantity}'),
-                                IconButton(icon: const Icon(Icons.add_circle_outline), onPressed: () {}),
-                              ],
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       );
                     },
@@ -80,9 +85,10 @@ class CartScreen extends StatelessWidget {
                 ),
                 Container(
                   padding: const EdgeInsets.all(24),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF1E1E1E),
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))],
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
                   ),
                   child: Column(
                     children: [
@@ -90,7 +96,7 @@ class CartScreen extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text("Total Amount", style: TextStyle(fontSize: 18)),
-                          Text("₹${cart.totalAmount}", style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFFFFD700))),
+                          Text("₹${cart.totalAmount}", style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFFFF8C00))),
                         ],
                       ),
                       const SizedBox(height: 20),
@@ -99,9 +105,9 @@ class CartScreen extends StatelessWidget {
                         height: 55,
                         child: ElevatedButton(
                           onPressed: () {
-                            // Proceed to checkout
+                            Navigator.push(context, MaterialPageRoute(builder: (_) => const CheckoutScreen()));
                           },
-                          child: const Text("Checkout", style: TextStyle(fontSize: 18)),
+                          child: const Text("Checkout", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                         ),
                       ),
                     ],
