@@ -14,30 +14,35 @@ class WishlistScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text("My Wishlist"),
       ),
-      body: wishlist.items.isEmpty
-          ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.favorite_border, size: 80, color: Colors.grey),
-                  SizedBox(height: 20),
-                  Text("Your wishlist is empty", style: TextStyle(fontSize: 18, color: Colors.grey)),
-                ],
-              ),
-            )
-          : GridView.builder(
-              padding: const EdgeInsets.all(20),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 0.75,
-                crossAxisSpacing: 15,
-                mainAxisSpacing: 15,
-              ),
-              itemCount: wishlist.items.length,
-              itemBuilder: (context, index) {
-                return ProductCard(product: wishlist.items[index]);
-              },
-            ),
+      body: Center(
+        child: Container(
+          constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width > 800 ? 1200 : double.infinity),
+          child: wishlist.items.isEmpty
+              ? const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.favorite_border, size: 80, color: Colors.grey),
+                      SizedBox(height: 20),
+                      Text("Your wishlist is empty", style: TextStyle(fontSize: 18, color: Colors.grey)),
+                    ],
+                  ),
+                )
+              : GridView.builder(
+                  padding: const EdgeInsets.all(20),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: MediaQuery.of(context).size.width > 800 ? 4 : 2,
+                    childAspectRatio: 0.75,
+                    crossAxisSpacing: 15,
+                    mainAxisSpacing: 15,
+                  ),
+                  itemCount: wishlist.items.length,
+                  itemBuilder: (context, index) {
+                    return ProductCard(product: wishlist.items[index]);
+                  },
+                ),
+        ),
+      ),
     );
   }
 }

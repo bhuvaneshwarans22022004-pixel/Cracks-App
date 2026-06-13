@@ -18,29 +18,193 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="FestiveKart - Premium crackers, gifts and decorations for all your celebrations.">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="mobile">
+  <meta name="apple-mobile-web-app-title" content="FestiveKart">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>mobile</title>
+  <title>FestiveKart</title>
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
+  <!-- The Firebase JS SDK Web Config -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
 
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
+    const firebaseConfig = {
+      apiKey: "AIzaSyBkVKhTQyRBnmgU3sKmjsnKRyLalRQc8QQ",
+      authDomain: "festivekart-101.firebaseapp.com",
+      projectId: "festivekart-101",
+      storageBucket: "festivekart-101.firebasestorage.app",
+      messagingSenderId: "734262498360",
+      appId: "1:734262498360:web:c73f1f1053f1f615bf82cd",
+      measurementId: "G-S8VHK4MQ9B"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+  </script>
+
+  <div id="loading-splash" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #021B4A; display: flex; justify-content: center; align-items: center; z-index: 99999; margin: 0; overflow: hidden; box-sizing: border-box;">
+    <svg width="1080" height="1920" viewBox="0 0 1080 1920" style="max-width: 100%; max-height: 100%; object-fit: contain;" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#FFD56A"/>
+          <stop offset="100%" stop-color="#F4A623"/>
+        </linearGradient>
+
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="6" result="blur"/>
+          <feMerge>
+            <feMergeNode in="blur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+
+      <rect width="100%" height="100%" fill="#021B4A"/>
+
+      <g transform="translate(540 500)">
+        <circle r="8" fill="#FF6A00">
+          <animate attributeName="r"
+                   values="0;60;0"
+                   dur="2s"
+                   repeatCount="indefinite"/>
+          <animate attributeName="opacity"
+                   values="1;0.3;0"
+                   dur="2s"
+                   repeatCount="indefinite"/>
+        </circle>
+
+        <circle r="8" fill="#FFD700">
+          <animate attributeName="r"
+                   values="0;90;0"
+                   dur="2.5s"
+                   repeatCount="indefinite"/>
+          <animate attributeName="opacity"
+                   values="1;0.4;0"
+                   dur="2.5s"
+                   repeatCount="indefinite"/>
+        </circle>
+      </g>
+
+      <g stroke="url(#gold)"
+         stroke-width="12"
+         fill="none"
+         stroke-linecap="round"
+         stroke-linejoin="round">
+
+        <path d="M380 800 L450 800 L500 980 L700 980 L760 860"
+              stroke-dasharray="700"
+              stroke-dashoffset="700">
+          <animate attributeName="stroke-dashoffset"
+                   from="700"
+                   to="0"
+                   dur="1.5s"
+                   fill="freeze"/>
+        </path>
+
+        <circle cx="540" cy="1050" r="18" fill="#F4A623">
+          <animate attributeName="opacity"
+                   from="0"
+                   to="1"
+                   begin="1.3s"
+                   dur="0.3s"
+                   fill="freeze"/>
+        </circle>
+
+        <circle cx="670" cy="1050" r="18" fill="#F4A623">
+          <animate attributeName="opacity"
+                   from="0"
+                   to="1"
+                   begin="1.4s"
+                   dur="0.3s"
+                   fill="freeze"/>
+        </circle>
+      </g>
+
+      <text x="540"
+            y="920"
+            text-anchor="middle"
+            font-size="90"
+            font-family="Poppins, Arial"
+            font-weight="bold"
+            fill="url(#gold)"
+            opacity="0"
+            filter="url(#glow)">
+        FK
+        <animate attributeName="opacity"
+                 from="0"
+                 to="1"
+                 begin="1.2s"
+                 dur="0.5s"
+                 fill="freeze"/>
+      </text>
+
+      <text x="540"
+            y="1220"
+            text-anchor="middle"
+            font-size="72"
+            font-family="Poppins, Arial"
+            font-weight="700"
+            fill="url(#gold)"
+            opacity="0">
+        FestiveKart
+        <animate attributeName="opacity"
+                 from="0"
+                 to="1"
+                 begin="1.8s"
+                 dur="0.8s"
+                 fill="freeze"/>
+
+        <animateTransform
+            attributeName="transform"
+            type="translate"
+            from="0 30"
+            to="0 0"
+            begin="1.8s"
+            dur="0.8s"
+            fill="freeze"/>
+      </text>
+    </svg>
+  </div>
+
+  <script>
+    const observer = new MutationObserver((mutations) => {
+      // Hide Dart SDK development warnings if they are injected
+      const divs = document.querySelectorAll('div');
+      for (const div of divs) {
+        if (div.textContent && (div.textContent.includes('compiled using a development version') || div.textContent.includes('compiled with a development version'))) {
+          div.style.display = 'none';
+        }
+      }
+
+      for (const mutation of mutations) {
+        for (const node of mutation.addedNodes) {
+          if (node.tagName && node.tagName.toLowerCase() === 'flutter-view') {
+            const splash = document.getElementById('loading-splash');
+            if (splash) {
+              splash.style.transition = 'opacity 0.6s ease-out';
+              splash.style.opacity = '0';
+              splash.style.pointerEvents = 'none';
+              setTimeout(() => splash.remove(), 600);
+            }
+            break;
+          }
+        }
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  </script>
+
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

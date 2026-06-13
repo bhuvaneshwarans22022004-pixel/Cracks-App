@@ -6,6 +6,7 @@ class User {
   final String role;
   final int loyaltyPoints;
   final String? token;
+  final String? profileImage;
 
   User({
     required this.id,
@@ -15,6 +16,7 @@ class User {
     required this.role,
     this.loyaltyPoints = 0,
     this.token,
+    this.profileImage = '',
   });
 
   factory User.fromJson(Map<String, dynamic> json, {String? token}) {
@@ -26,6 +28,7 @@ class User {
       role: json['role'] ?? 'user',
       loyaltyPoints: json['loyaltyPoints'] ?? 0,
       token: token ?? json['token'],
+      profileImage: json['profileImage'] ?? '',
     );
   }
 
@@ -38,6 +41,7 @@ class User {
       'role': role,
       'loyaltyPoints': loyaltyPoints,
       'token': token,
+      'profileImage': profileImage,
     };
   }
 }

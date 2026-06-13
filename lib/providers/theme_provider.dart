@@ -17,7 +17,8 @@ class ThemeProvider with ChangeNotifier {
   }
 
   Future<void> _loadTheme() async {
-    _isDarkMode = await StorageService.isDarkMode();
+    _isDarkMode = false;
+    await StorageService.saveDarkMode(false);
     notifyListeners();
   }
 }

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "734262498360",
+    "project_id": "festivekart-101",
+    "storage_bucket": "festivekart-101.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:734262498360:android:6eeb3a130fc5fac0bf82cd",
+        "android_client_info": {
+          "package_name": "festivekart.in"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAk8s3xuL_jO5NZAygrWImiO8tfyNU7XYQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

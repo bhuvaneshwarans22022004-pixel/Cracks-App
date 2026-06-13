@@ -8,8 +8,10 @@ import 'providers/wishlist_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/language_provider.dart';
 import 'providers/cms_provider.dart';
+import 'providers/banner_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home/home_screen.dart';
+import 'screens/splash/splash_screen.dart';
 import 'utils/theme.dart';
 
 void main() {
@@ -24,6 +26,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => LanguageProvider()),
         ChangeNotifierProvider(create: (_) => CmsProvider()),
+        ChangeNotifierProvider(create: (_) => BannerProvider()),
       ],
       child: const FestiveKartApp(),
     ),
@@ -43,11 +46,44 @@ class FestiveKartApp extends StatelessWidget {
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-          home: Consumer<AuthProvider>(
-            builder: (context, auth, _) {
-              return auth.isAuthenticated ? const HomeScreen() : const LoginScreen();
-            },
-          ),
+          home: const AuthWrapper(),
+        );
+      },
+    );
+  }
+}
+
+class AuthWrapper extends StatefulWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  late Future<List<dynamic>> _initializationFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializationFuture = Future.wait([
+      Provider.of<AuthProvider>(context, listen: false).tryAutoLogin(),
+      Future.delayed(const Duration(milliseconds: 2500)),
+    ]);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<dynamic>>(
+      future: _initializationFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SplashScreen();
+        }
+        return Consumer<AuthProvider>(
+          builder: (context, auth, _) {
+            return auth.isAuthenticated ? const HomeScreen() : const LoginScreen();
+          },
         );
       },
     );

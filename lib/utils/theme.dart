@@ -8,23 +8,23 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.light,
       primaryColor: const Color(0xFFFF8C00),
-      scaffoldBackgroundColor: const Color(0xFFF8F9FA),
+      scaffoldBackgroundColor: const Color(0xFFFAF8F5),
       colorScheme: const ColorScheme.light(
         primary: Color(0xFFFF8C00),
         secondary: Color(0xFFFFD700),
         surface: Colors.white,
-        onSurface: Colors.black87,
+        onSurface: Color(0xFF2E1E1C),
       ),
       textTheme: GoogleFonts.outfitTextTheme(ThemeData.light().textTheme),
       appBarTheme: AppBarTheme(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFFFAF8F5),
         elevation: 0,
         centerTitle: false,
-        iconTheme: const IconThemeData(color: Colors.black87),
+        iconTheme: const IconThemeData(color: Color(0xFF2E1E1C)),
         titleTextStyle: GoogleFonts.outfit(
           fontSize: 20,
           fontWeight: FontWeight.bold,
-          color: Colors.black87,
+          color: const Color(0xFF2E1E1C),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -49,12 +49,13 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      primaryColor: Color(AppConstants.primaryColor),
-      scaffoldBackgroundColor: Color(AppConstants.backgroundColor),
-      colorScheme: ColorScheme.dark(
-        primary: Color(AppConstants.primaryColor),
-        secondary: Color(AppConstants.secondaryColor),
-        surface: Color(AppConstants.surfaceColor),
+      primaryColor: const Color(0xFFFF8C00),
+      scaffoldBackgroundColor: const Color(0xFF1E1615), // Very dark warm brown matching the theme
+      colorScheme: const ColorScheme.dark(
+        primary: Color(0xFFFF8C00),
+        secondary: Color(0xFFFFD700),
+        surface: Color(0xFF2C1E1B),
+        onSurface: Colors.white,
       ),
       textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme),
       appBarTheme: AppBarTheme(
@@ -69,7 +70,7 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: Color(AppConstants.primaryColor),
+          backgroundColor: const Color(0xFFFF8C00),
           foregroundColor: Colors.white,
           textStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold),
           shape: RoundedRectangleBorder(
