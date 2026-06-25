@@ -31,6 +31,36 @@ class StorageService {
     return prefs.getString('language') ?? 'English';
   }
 
+  static Future<void> saveLastSelectedIndex(int index) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('lastSelectedIndex', index);
+  }
+
+  static Future<int> getLastSelectedIndex() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt('lastSelectedIndex') ?? 0;
+  }
+
+  static Future<void> saveLastExploreCategory(String category) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('lastExploreCategory', category);
+  }
+
+  static Future<String> getLastExploreCategory() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('lastExploreCategory') ?? 'All';
+  }
+
+  static Future<void> saveLastLocation(String location) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('lastLocation', location);
+  }
+
+  static Future<String?> getLastLocation() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('lastLocation');
+  }
+
   static Future<void> clear() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();

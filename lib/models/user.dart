@@ -1,5 +1,6 @@
 class User {
   final String id;
+  final String buyerId;
   final String name;
   final String email;
   final String phone;
@@ -10,6 +11,7 @@ class User {
 
   User({
     required this.id,
+    required this.buyerId,
     required this.name,
     required this.email,
     required this.phone,
@@ -22,6 +24,7 @@ class User {
   factory User.fromJson(Map<String, dynamic> json, {String? token}) {
     return User(
       id: json['_id'] ?? json['id'] ?? '',
+      buyerId: json['buyerId'] ?? '',
       name: json['name'] ?? '',
       email: json['email'] ?? '',
       phone: json['phone'] ?? '',
@@ -35,6 +38,7 @@ class User {
   Map<String, dynamic> toJson() {
     return {
       '_id': id,
+      'buyerId': buyerId,
       'name': name,
       'email': email,
       'phone': phone,

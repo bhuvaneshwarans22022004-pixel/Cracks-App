@@ -9,6 +9,7 @@ import 'providers/theme_provider.dart';
 import 'providers/language_provider.dart';
 import 'providers/cms_provider.dart';
 import 'providers/banner_provider.dart';
+import 'providers/address_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/splash/splash_screen.dart';
@@ -27,6 +28,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => LanguageProvider()),
         ChangeNotifierProvider(create: (_) => CmsProvider()),
         ChangeNotifierProvider(create: (_) => BannerProvider()),
+        ChangeNotifierProvider(create: (_) => AddressProvider()),
       ],
       child: const FestiveKartApp(),
     ),
@@ -67,7 +69,13 @@ class _AuthWrapperState extends State<AuthWrapper> {
   void initState() {
     super.initState();
     _initializationFuture = Future.wait([
-      Provider.of<AuthProvider>(context, listen: false).tryAutoLogin(),
+      Provider.of<AuthProvider>(context, listen: false).tryAutoLogin().then((loggedIn) {
+        if (loggedIn) {
+          final auth = Provider.of<AuthProvider>(context, listen: false);
+          Provider.of<AddressProvider>(context, listen: false).fetchAddresses(auth.user!.token!);
+        }
+        return loggedIn;
+      }),
       Future.delayed(const Duration(milliseconds: 2500)),
     ]);
   }

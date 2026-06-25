@@ -6,11 +6,19 @@ import '../services/storage_service.dart';
 class AuthProvider with ChangeNotifier {
   User? _user;
   bool _isLoading = false;
+  bool _isGuestMode = false;
   final AuthService _authService = AuthService();
 
   User? get user => _user;
   bool get isLoading => _isLoading;
-  bool get isAuthenticated => _user != null;
+  bool get isGuest => _isGuestMode;
+  bool get isAuthenticated => _user != null || _isGuestMode;
+
+  void loginAsGuest() {
+    _isGuestMode = true;
+    _user = null;
+    notifyListeners();
+  }
 
   Future<bool> login(String email, String password) async {
     _isLoading = true;
@@ -54,6 +62,7 @@ class AuthProvider with ChangeNotifier {
 
   Future<void> logout() async {
     _user = null;
+    _isGuestMode = false;
     await StorageService.clear();
     notifyListeners();
   }

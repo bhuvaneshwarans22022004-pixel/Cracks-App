@@ -28,13 +28,17 @@ class OrderProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> createOrder(Map<String, dynamic> orderData, String token) async {
+  Future<String?> createOrder(Map<String, dynamic> orderData, String token) async {
     try {
       final response = await ApiService.post('orders', orderData, token: token);
-      return response.statusCode == 201;
+      if (response.statusCode == 201) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        return data['_id'] as String?;
+      }
+      return null;
     } catch (e) {
       print(e);
-      return false;
+      return null;
     }
   }
 }

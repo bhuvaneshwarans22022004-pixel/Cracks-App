@@ -34,4 +34,14 @@ class ApiService {
       body: jsonEncode(body),
     );
   }
+
+  static Future<http.Response> delete(String endpoint, {String? token}) async {
+    return await http.delete(
+      Uri.parse('${AppConstants.baseUrl}/$endpoint'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+    );
+  }
 }

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/address_provider.dart';
+import '../cart/address_screen.dart';
 import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -11,6 +13,8 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
     final user = auth.user;
+    final addressProvider = Provider.of<AddressProvider>(context);
+    final selectedAddress = addressProvider.selectedAddress;
 
     // Calculate Loyalty Tiers
     final int points = user?.loyaltyPoints ?? 120;
@@ -40,27 +44,61 @@ class ProfileScreen extends StatelessWidget {
       progressPercentage = ((points - 100) / 150).clamp(0.0, 1.0);
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("My Profile", style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.red),
-            onPressed: () {
-              auth.logout();
-              Navigator.pop(context);
-            },
-          )
-        ],
-      ),
-      body: Center(
-        child: Container(
-          constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width > 800 ? 800 : double.infinity),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+    final isWeb = MediaQuery.of(context).size.width > 800;
+
+    return SafeArea(
+      child: LayoutBuilder(
+          builder: (context, viewportConstraints) {
+            return SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: viewportConstraints.maxHeight,
+                ),
+                child: Center(
+                  child: Container(
+                    constraints: BoxConstraints(
+                      maxWidth: isWeb ? 1000 : double.infinity,
+                      minHeight: viewportConstraints.maxHeight,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: isWeb ? [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.04),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        )
+                      ] : null,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                // Custom Header Row (matching web view layout)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 24, top: 12),
+                  child: Row(
+                    children: [
+                      Text(
+                        "My Profile",
+                        style: GoogleFonts.outfit(
+                          color: Colors.black87,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.logout, color: Colors.red),
+                        onPressed: () {
+                          auth.logout();
+                        },
+                      ),
+                    ],
+                  ),
+                ),
             // User Header Card
             Center(
               child: Column(
@@ -87,6 +125,17 @@ class ProfileScreen extends StatelessWidget {
                     user?.name ?? "Guest User",
                     style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.bold),
                   ),
+                  if (user?.buyerId != null && user!.buyerId.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      "ID: ${user.buyerId}",
+                      style: GoogleFonts.outfit(
+                        color: const Color(0xFFFF8C00),
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                   Text(
                     user?.email ?? "login to sync profile",
                     style: const TextStyle(color: Colors.grey, fontSize: 13),
@@ -178,7 +227,21 @@ class ProfileScreen extends StatelessWidget {
             Text("Profile Information", style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             _profileItem(Icons.phone_outlined, "Phone Number", user?.phone ?? "Not set"),
-            _profileItem(Icons.location_on_outlined, "Shipping Address", "123 Festive Street, Diwalitown"),
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AddressScreen(isCheckoutMode: false),
+                  ),
+                );
+              },
+              child: _profileItem(
+                Icons.location_on_outlined,
+                "Shipping Address",
+                selectedAddress != null ? selectedAddress.formattedAddress : "Configure saved addresses",
+              ),
+            ),
             _profileItem(Icons.card_membership_outlined, "Loyalty Tier", tier),
             const SizedBox(height: 20),
 
@@ -222,8 +285,12 @@ class ProfileScreen extends StatelessWidget {
         ),
       ),
     ),
-      ),
-    );
+  ),
+),
+            );
+          },
+        ),
+      );
   }
 
   Widget _profileItem(IconData icon, String label, String value) {

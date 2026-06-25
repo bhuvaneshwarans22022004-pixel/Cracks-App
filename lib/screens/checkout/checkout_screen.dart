@@ -109,9 +109,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       final token = auth.user?.token;
                       if (token == null) return;
     
-                      final success = await orderProvider.createOrder(orderData, token);
+                      final orderId = await orderProvider.createOrder(orderData, token);
     
-                      if (success) {
+                      if (orderId != null) {
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Order Placed Successfully!")));
                           cart.clear();
