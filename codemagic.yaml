@@ -10,8 +10,9 @@ workflows:
     triggering:
       events:
         - push
-      branches:
-        - bhuvi
+      branch_patterns:
+        - pattern: 'bhuvi'
+          include: true
     scripts:
       - name: Set up dependencies
         script: |
