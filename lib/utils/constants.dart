@@ -2,6 +2,10 @@ class AppConstants {
   static const String baseUrl = 'https://festivekart-backend-734262498360.asia-south1.run.app/api'; // Use 10.0.2.2 for Android Emulator
   static const String appName = 'FestiveKart';
   
+  // Payment credentials
+  static const String upiId = '9361505658@ybl';
+  static const String gpayNumber = '9361505658';
+
   // Colors
   static const int primaryColor = 0xFFD45D27; // Rust Orange
   static const int secondaryColor = 0xFFE5A93C; // Muted Gold

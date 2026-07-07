@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../providers/address_provider.dart';
@@ -6,6 +7,7 @@ import '../../providers/cart_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../providers/auth_provider.dart';
 import 'order_placed_screen.dart';
+import '../../utils/constants.dart';
 
 class PaymentScreen extends StatefulWidget {
   final Address selectedAddress;
@@ -270,6 +272,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                         return;
                                       }
 
+                                      if (_selectedMethod == 'UPI') {
+                                        _showUPIDialog(context, auth, cart, orderProvider);
+                                        return;
+                                      }
+
                                       final orderData = {
                                         'orderItems': cart.items.values.map((item) => {
                                           'name': item.product.name,
@@ -356,6 +363,204 @@ class _PaymentScreenState extends State<PaymentScreen> {
           },
         ),
       ),
+    );
+  }
+
+  void _showUPIDialog(BuildContext context, AuthProvider auth, CartProvider cart, OrderProvider orderProvider) {
+    final utrController = TextEditingController();
+    final String upiId = AppConstants.upiId; 
+    final String gpayNumber = AppConstants.gpayNumber; 
+    final String payUrl = "upi://pay?pa=$upiId&pn=FestiveKart&am=${widget.toPay.toStringAsFixed(0)}&cu=INR";
+    final String qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${Uri.encodeComponent(payUrl)}";
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              title: Row(
+                children: [
+                  const Icon(Icons.qr_code_scanner_rounded, color: Color(0xFFFF8C00)),
+                  const SizedBox(width: 10),
+                  Text(
+                    "Scan & Pay via UPI",
+                    style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18),
+                  ),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "Scan the QR code below or use the GPay / PhonePe details to make a direct payment of ₹${widget.toPay.toStringAsFixed(0)}.",
+                      style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey[600]),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey[200]!),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Image.network(
+                        qrUrl,
+                        width: 180,
+                        height: 180,
+                        errorBuilder: (context, error, stackTrace) => const Icon(Icons.qr_code_2_rounded, size: 100, color: Colors.grey),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFF8C00).withOpacity(0.04),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text("GPay / PhonePe:", style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey[700])),
+                              GestureDetector(
+                                onTap: () {
+                                  Clipboard.setData(ClipboardData(text: gpayNumber));
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text("Number copied to clipboard!")),
+                                  );
+                                },
+                                child: Row(
+                                  children: [
+                                    Text(gpayNumber, style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87)),
+                                    const SizedBox(width: 4),
+                                    const Icon(Icons.copy_rounded, size: 12, color: Color(0xFFFF8C00)),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text("UPI ID:", style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey[700])),
+                              GestureDetector(
+                                onTap: () {
+                                  Clipboard.setData(ClipboardData(text: upiId));
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text("UPI ID copied to clipboard!")),
+                                  );
+                                },
+                                child: Row(
+                                  children: [
+                                    Text(upiId, style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87)),
+                                    const SizedBox(width: 4),
+                                    const Icon(Icons.copy_rounded, size: 12, color: Color(0xFFFF8C00)),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    TextField(
+                      controller: utrController,
+                      decoration: InputDecoration(
+                        labelText: "Enter Transaction Ref / UTR No.",
+                        labelStyle: GoogleFonts.outfit(fontSize: 13, color: Colors.grey[600]),
+                        hintText: "12-digit transaction ID",
+                        hintStyle: GoogleFonts.outfit(fontSize: 12, color: Colors.grey[400]),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      ),
+                      keyboardType: TextInputType.number,
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text("Cancel", style: GoogleFonts.outfit(color: Colors.grey[600], fontWeight: FontWeight.bold)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFF8C00),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () async {
+                    final utr = utrController.text.trim();
+                    if (utr.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Please enter the UTR/Reference number")),
+                      );
+                      return;
+                    }
+                    
+                    Navigator.pop(context);
+                    
+                    final token = auth.user?.token;
+                    if (token == null) return;
+                    
+                    final orderData = {
+                      'orderItems': cart.items.values.map((item) => {
+                        'name': item.product.name,
+                        'qty': item.quantity,
+                        'image': item.product.image,
+                        'price': item.product.price,
+                        'product': item.product.id,
+                      }).toList(),
+                      'shippingAddress': widget.selectedAddress.formattedAddress,
+                      'paymentMethod': 'UPI',
+                      'paymentResult': {
+                        'id': utr,
+                        'status': 'Pending Verification',
+                        'update_time': DateTime.now().toIso8601String(),
+                        'email_address': auth.user?.email ?? '',
+                      },
+                      'itemsPrice': widget.totalMrp,
+                      'shippingPrice': widget.deliveryCharge,
+                      'totalPrice': widget.toPay,
+                    };
+
+                    final orderId = await orderProvider.createOrder(orderData, token);
+
+                    if (orderId != null) {
+                      cart.clear();
+                      if (mounted) {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => OrderPlacedScreen(
+                              orderId: orderId,
+                              toPay: widget.toPay,
+                            ),
+                          ),
+                        );
+                      }
+                    } else {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Failed to place order. Try again.")),
+                        );
+                      }
+                    }
+                  },
+                  child: Text("Confirm Payment", style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }

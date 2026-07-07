@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../models/product.dart';
+import '../providers/auth_provider.dart';
+import '../providers/wishlist_provider.dart';
+import '../screens/auth/login_screen.dart';
 import '../screens/product/product_detail_screen.dart';
 
 class ProductCard extends StatelessWidget {
@@ -10,6 +15,175 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isOutOfStock = product.countInStock <= 0;
+    final bool isLowStock = product.countInStock > 0 && product.countInStock <= 5;
+
+    Widget cardContent = Card(
+      clipBehavior: Clip.antiAlias,
+      elevation: isOutOfStock ? 0 : 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Stack(
+              children: [
+                CachedNetworkImage(
+                  imageUrl: product.image,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  placeholder: (context, url) => Container(color: Colors.grey[200]),
+                  errorWidget: (context, url, error) => const Icon(Icons.celebration, color: Color(0xFFFF8C00)),
+                ),
+                if (isLowStock)
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.redAccent,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        "Only ${product.countInStock} left",
+                        style: GoogleFonts.outfit(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                if (isOutOfStock)
+                  Container(
+                    color: Colors.black.withOpacity(0.55),
+                    alignment: Alignment.center,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.lock_outline_rounded, color: Colors.white, size: 24),
+                        const SizedBox(height: 4),
+                        Text(
+                          "OUT OF STOCK",
+                          style: GoogleFonts.outfit(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Consumer2<AuthProvider, WishlistProvider>(
+                    builder: (context, auth, wishlist, _) {
+                      final isInWish = wishlist.isInWishlist(product.id);
+                      return GestureDetector(
+                        onTap: () {
+                          if (auth.user == null || auth.user!.token == null) {
+                            _showLoginBottomSheet(context);
+                          } else {
+                            final wasInWish = isInWish;
+                            wishlist.toggleWishlist(product, auth.user!.token!);
+                            
+                            ScaffoldMessenger.of(context).clearSnackBars();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  wasInWish 
+                                    ? "Removed from Wishlist" 
+                                    : "Added to Wishlist ❤️",
+                                  style: GoogleFonts.outfit(fontWeight: FontWeight.w600, color: Colors.white),
+                                ),
+                                backgroundColor: wasInWish ? Colors.grey[800] : const Color(0xFFFF8C00),
+                                duration: const Duration(seconds: 2),
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                            );
+                          }
+                        },
+                        child: CircleAvatar(
+                          backgroundColor: Colors.white.withOpacity(0.9),
+                          radius: 16,
+                          child: Icon(
+                            isInWish ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                            size: 18,
+                            color: Colors.red,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  product.name,
+                  style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: isOutOfStock ? Colors.grey[500] : Colors.black87,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                      decoration: BoxDecoration(color: Colors.green, borderRadius: BorderRadius.circular(4)),
+                      child: Row(
+                        children: [
+                          Text('${product.rating}', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                          const Icon(Icons.star, color: Colors.white, size: 10),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    Text('(${product.numReviews})', style: TextStyle(color: Colors.grey[600], fontSize: 10)),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  "₹${product.price}",
+                  style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    color: isOutOfStock ? Colors.grey : Colors.black,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (isOutOfStock) {
+      return ColorFiltered(
+        colorFilter: const ColorFilter.mode(
+          Colors.grey,
+          BlendMode.saturation,
+        ),
+        child: Opacity(
+          opacity: 0.75,
+          child: cardContent,
+        ),
+      );
+    }
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -19,72 +193,84 @@ class ProductCard extends StatelessWidget {
           ),
         );
       },
-      child: Card(
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Stack(
-                children: [
-                  CachedNetworkImage(
-                    imageUrl: product.image,
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    placeholder: (context, url) => Container(color: Colors.grey[200]),
-                    errorWidget: (context, url, error) => const Icon(Icons.celebration, color: Color(0xFFFF8C00)),
-                  ),
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: CircleAvatar(
-                      backgroundColor: Colors.white.withOpacity(0.8),
-                      radius: 16,
-                      child: const Icon(Icons.favorite_border, size: 18, color: Colors.red),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    product.name,
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                        decoration: BoxDecoration(color: Colors.green, borderRadius: BorderRadius.circular(4)),
-                        child: Row(
-                          children: [
-                            Text('${product.rating}', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-                            const Icon(Icons.star, color: Colors.white, size: 10),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 5),
-                      Text('(${product.numReviews})', style: TextStyle(color: Colors.grey[600], fontSize: 10)),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    "₹${product.price}",
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+      child: cardContent,
+    );
+  }
+
+  void _showLoginBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Icon(Icons.favorite_rounded, color: Colors.red, size: 60),
+              const SizedBox(height: 16),
+              Text(
+                "Login to save your favorites",
+                style: GoogleFonts.outfit(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "Keep track of the products you love by adding them to your wishlist.",
+                textAlign: TextAlign.center,
+                style: GoogleFonts.outfit(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFF8C00),
+                  minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  );
+                },
+                child: Text(
+                  "Login Now",
+                  style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  "Cancel",
+                  style: GoogleFonts.outfit(color: Colors.grey[600], fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

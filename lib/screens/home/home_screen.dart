@@ -66,6 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final auth = Provider.of<AuthProvider>(context, listen: false);
       if (auth.user != null && auth.user!.token != null) {
         Provider.of<OrderProvider>(context, listen: false).fetchOrders(auth.user!.token!);
+        Provider.of<WishlistProvider>(context, listen: false).fetchWishlist(auth.user!.token!);
         Provider.of<AddressProvider>(context, listen: false).fetchAddresses(auth.user!.token!).then((_) {
           if (!mounted) return;
           final addressProvider = Provider.of<AddressProvider>(context, listen: false);

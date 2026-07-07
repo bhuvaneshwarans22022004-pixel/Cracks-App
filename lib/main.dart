@@ -73,6 +73,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
         if (loggedIn) {
           final auth = Provider.of<AuthProvider>(context, listen: false);
           Provider.of<AddressProvider>(context, listen: false).fetchAddresses(auth.user!.token!);
+          Provider.of<WishlistProvider>(context, listen: false).fetchWishlist(auth.user!.token!);
         }
         return loggedIn;
       }),
