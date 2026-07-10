@@ -142,6 +142,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     color: Colors.black87,
                   ),
                 ),
+                if (product.tamilName.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    product.tamilName,
+                    style: GoogleFonts.outfit(
+                      fontSize: 18,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 8),
 
                 // 3. Ratings & Reviews Row

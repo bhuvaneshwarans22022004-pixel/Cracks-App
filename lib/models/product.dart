@@ -1,6 +1,7 @@
 class Product {
   final String id;
   final String name;
+  final String tamilName;
   final String description;
   final double price;
   final String category;
@@ -12,6 +13,7 @@ class Product {
   Product({
     required this.id,
     required this.name,
+    required this.tamilName,
     required this.description,
     required this.price,
     required this.category,
@@ -25,6 +27,7 @@ class Product {
     return Product(
       id: json['_id'],
       name: json['name'],
+      tamilName: json['tamilName'] ?? '',
       description: json['description'],
       price: json['price'].toDouble(),
       category: json['category'],
@@ -39,6 +42,7 @@ class Product {
     return {
       '_id': id,
       'name': name,
+      'tamilName': tamilName,
       'description': description,
       'price': price,
       'category': category,

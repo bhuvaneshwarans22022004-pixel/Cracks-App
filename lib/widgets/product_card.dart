@@ -138,6 +138,19 @@ class ProductCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
+                if (product.tamilName.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    product.tamilName,
+                    style: GoogleFonts.outfit(
+                      fontSize: 11,
+                      color: isOutOfStock ? Colors.grey[400] : Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
                 const SizedBox(height: 4),
                 Row(
                   children: [
