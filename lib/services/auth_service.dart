@@ -63,7 +63,7 @@ class AuthService {
 
   Future<String?> uploadProfileImage(List<int> bytes, String filename, String token) async {
     try {
-      final uri = Uri.parse('${AppConstants.baseUrl}/upload');
+      final uri = Uri.parse('${AppConstants.baseUrl}/api/upload');
       final request = http.MultipartRequest('POST', uri);
       
       request.headers['Authorization'] = 'Bearer $token';

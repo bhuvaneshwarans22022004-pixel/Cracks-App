@@ -473,7 +473,11 @@ class _HomeScreenState extends State<HomeScreen> {
         },
       ),
       const OrderHistoryScreen(),
-      const ProfileScreen(),
+      ProfileScreen(
+        onBackPressed: () {
+          _setSelectedIndex(0);
+        },
+      ),
     ];
 
     return Scaffold(

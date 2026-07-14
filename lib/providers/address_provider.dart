@@ -90,6 +90,25 @@ class AddressProvider with ChangeNotifier {
     }
   }
 
+  Future<void> updateAddress(String id, Address address, String token) async {
+    try {
+      final response = await ApiService.put('addresses/$id', address.toJson(), token: token);
+      if (response.statusCode == 200) {
+        final updatedAddress = Address.fromJson(jsonDecode(response.body));
+        final index = _addresses.indexWhere((item) => item.id == id);
+        if (index != -1) {
+          _addresses[index] = updatedAddress;
+        }
+        if (_selectedAddress?.id == id) {
+          _selectedAddress = updatedAddress;
+        }
+        notifyListeners();
+      }
+    } catch (e) {
+      print('Error updating address: $e');
+    }
+  }
+
   Future<void> removeAddress(String id, String token) async {
     try {
       final response = await ApiService.delete('addresses/$id', token: token);

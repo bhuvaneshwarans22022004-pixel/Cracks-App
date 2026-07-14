@@ -7,7 +7,9 @@ import '../cart/address_screen.dart';
 import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
+  final VoidCallback? onBackPressed;
+
+  const ProfileScreen({super.key, this.onBackPressed});
 
   @override
   Widget build(BuildContext context) {
@@ -81,6 +83,21 @@ class ProfileScreen extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 24, top: 12),
                   child: Row(
                     children: [
+                      if (onBackPressed != null || Navigator.canPop(context)) ...[
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: () {
+                            if (onBackPressed != null) {
+                              onBackPressed!();
+                            } else {
+                              Navigator.pop(context);
+                            }
+                          },
+                        ),
+                        const SizedBox(width: 12),
+                      ],
                       Text(
                         "My Profile",
                         style: GoogleFonts.outfit(
@@ -90,11 +107,24 @@ class ProfileScreen extends StatelessWidget {
                         ),
                       ),
                       const Spacer(),
-                      IconButton(
-                        icon: const Icon(Icons.logout, color: Colors.red),
+                      TextButton.icon(
+                        icon: const Icon(Icons.logout_rounded, color: Colors.red, size: 18),
+                        label: Text(
+                          "Logout",
+                          style: GoogleFonts.outfit(
+                            color: Colors.red,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
                         onPressed: () {
                           auth.logout();
                         },
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
                       ),
                     ],
                   ),

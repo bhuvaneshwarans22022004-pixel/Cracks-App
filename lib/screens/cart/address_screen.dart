@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -5,6 +7,7 @@ import '../../providers/address_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/api_service.dart';
 import 'payment_screen.dart';
 
 class AddressScreen extends StatefulWidget {
@@ -58,7 +61,49 @@ class _AddressScreenState extends State<AddressScreen> {
     super.dispose();
   }
 
-  void _showAddAddressSheet(AddressProvider addressProvider) {
+  Future<List<String>> _getPlacesSuggestions(String query) async {
+    print("[Autocomplete Log] Calling _getPlacesSuggestions with query: '$query'");
+    if (query.trim().isEmpty) return [];
+    try {
+      final url = 'addresses/autocomplete?query=${Uri.encodeComponent(query.trim())}';
+      print("[Autocomplete Log] Request URL: $url");
+      final response = await ApiService.get(url);
+      print("[Autocomplete Log] Response status: ${response.statusCode}");
+      print("[Autocomplete Log] Response body: ${response.body}");
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        final suggestions = data.map((item) => item.toString()).toList();
+        print("[Autocomplete Log] Parsed suggestions: $suggestions");
+        return suggestions;
+      }
+    } catch (e) {
+      print("[Autocomplete Log] Error fetching places from backend: $e");
+    }
+    return [];
+  }
+
+  void _showAddAddressSheet(AddressProvider addressProvider, {Address? existingAddress}) {
+    List<String> suggestions = [];
+    bool isSearching = false;
+    Timer? debounceTimer;
+    String activeField = ''; // 'addressLine' or 'city'
+
+    if (existingAddress != null) {
+      _addressLineController.text = existingAddress.addressLine;
+      _cityController.text = existingAddress.city;
+      _stateController.text = existingAddress.state;
+      _zipCodeController.text = existingAddress.zipCode;
+      _phoneController.text = existingAddress.phoneNumber;
+      _addressType = existingAddress.type;
+    } else {
+      _addressLineController.clear();
+      _cityController.clear();
+      _stateController.clear();
+      _zipCodeController.clear();
+      _phoneController.clear();
+      _addressType = 'Home';
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -68,6 +113,75 @@ class _AddressScreenState extends State<AddressScreen> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setModalState) {
+            Widget buildSuggestionsDropdown() {
+              if (suggestions.isEmpty) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Container(
+                  constraints: const BoxConstraints(maxHeight: 180),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey[200]!),
+                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.white,
+                  ),
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    padding: EdgeInsets.zero,
+                    itemCount: suggestions.length,
+                    itemBuilder: (context, index) {
+                      final suggestion = suggestions[index];
+                      return ListTile(
+                        dense: true,
+                        leading: const Icon(Icons.location_on_outlined, color: Colors.grey, size: 16),
+                        title: Text(
+                          suggestion,
+                          style: GoogleFonts.outfit(fontSize: 13, color: Colors.black87),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        onTap: () {
+                          final parts = suggestion.split(',').map((p) => p.trim()).toList();
+                          if (parts.isNotEmpty && parts.last.toLowerCase() == 'india') {
+                            parts.removeLast();
+                          }
+                          
+                          String state = '';
+                          String zip = '';
+                          if (parts.isNotEmpty) {
+                            final statePart = parts.removeLast();
+                            final zipRegExp = RegExp(r'\d{6}');
+                            final match = zipRegExp.firstMatch(statePart);
+                            if (match != null) {
+                              zip = match.group(0)!;
+                              state = statePart.replaceAll(zip, '').trim();
+                            } else {
+                              state = statePart;
+                            }
+                          }
+                          
+                          String city = '';
+                          if (parts.isNotEmpty) {
+                            city = parts.removeLast();
+                          }
+                          
+                          String addressLine = parts.join(', ');
+                          
+                          setModalState(() {
+                            _addressLineController.text = addressLine.isEmpty ? city : addressLine;
+                            _cityController.text = city;
+                            _stateController.text = state;
+                            _zipCodeController.text = zip;
+                            suggestions.clear();
+                            activeField = '';
+                          });
+                        },
+                      );
+                    },
+                  ),
+                ),
+              );
+            }
+
             return Padding(
               padding: EdgeInsets.only(
                 bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -83,7 +197,7 @@ class _AddressScreenState extends State<AddressScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "Add New Address",
+                        existingAddress != null ? "Edit Address" : "Add New Address",
                         style: GoogleFonts.outfit(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -137,6 +251,33 @@ class _AddressScreenState extends State<AddressScreen> {
                       const SizedBox(height: 20),
                       TextFormField(
                         controller: _addressLineController,
+                        onChanged: (val) {
+                          print("[Autocomplete Log] Address Line onChanged fired with text: '$val'");
+                          if (debounceTimer?.isActive ?? false) {
+                            print("[Autocomplete Log] Cancelling active debounce timer");
+                            debounceTimer!.cancel();
+                          }
+                          debounceTimer = Timer(const Duration(milliseconds: 500), () async {
+                            print("[Autocomplete Log] Debounce timer triggered for Address Line query: '${val.trim()}'");
+                            if (val.trim().isEmpty) {
+                              setModalState(() {
+                                suggestions = [];
+                                activeField = '';
+                              });
+                              return;
+                            }
+                            setModalState(() {
+                              isSearching = true;
+                              activeField = 'addressLine';
+                            });
+                            final fetched = await _getPlacesSuggestions(val.trim());
+                            print("[Autocomplete Log] Fetched for Address Line: $fetched");
+                            setModalState(() {
+                              suggestions = fetched;
+                              isSearching = false;
+                            });
+                          });
+                        },
                         decoration: InputDecoration(
                           labelText: "Address Line",
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -147,12 +288,53 @@ class _AddressScreenState extends State<AddressScreen> {
                         ),
                         validator: (value) => value == null || value.trim().isEmpty ? 'Please enter address line' : null,
                       ),
+                      if (activeField == 'addressLine') ...[
+                        if (isSearching)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8),
+                            child: Center(
+                              child: SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFFF8C00)),
+                              ),
+                            ),
+                          ),
+                        buildSuggestionsDropdown(),
+                      ],
                       const SizedBox(height: 16),
                       Row(
                         children: [
                           Expanded(
                             child: TextFormField(
                               controller: _cityController,
+                              onChanged: (val) {
+                                print("[Autocomplete Log] City onChanged fired with text: '$val'");
+                                if (debounceTimer?.isActive ?? false) {
+                                  print("[Autocomplete Log] Cancelling active debounce timer");
+                                  debounceTimer!.cancel();
+                                }
+                                debounceTimer = Timer(const Duration(milliseconds: 500), () async {
+                                  print("[Autocomplete Log] Debounce timer triggered for City query: '${val.trim()}'");
+                                  if (val.trim().isEmpty) {
+                                    setModalState(() {
+                                      suggestions = [];
+                                      activeField = '';
+                                    });
+                                    return;
+                                  }
+                                  setModalState(() {
+                                    isSearching = true;
+                                    activeField = 'city';
+                                  });
+                                  final fetched = await _getPlacesSuggestions(val.trim());
+                                  print("[Autocomplete Log] Fetched for City: $fetched");
+                                  setModalState(() {
+                                    suggestions = fetched;
+                                    isSearching = false;
+                                  });
+                                });
+                              },
                               decoration: InputDecoration(
                                 labelText: "City",
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -173,6 +355,20 @@ class _AddressScreenState extends State<AddressScreen> {
                           ),
                         ],
                       ),
+                      if (activeField == 'city') ...[
+                        if (isSearching)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8),
+                            child: Center(
+                              child: SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFFF8C00)),
+                              ),
+                            ),
+                          ),
+                        buildSuggestionsDropdown(),
+                      ],
                       const SizedBox(height: 16),
                       Row(
                         children: [
@@ -212,18 +408,31 @@ class _AddressScreenState extends State<AddressScreen> {
                           ),
                           onPressed: () {
                             if (_formKey.currentState!.validate()) {
-                              final newAddr = Address(
-                                id: DateTime.now().millisecondsSinceEpoch.toString(),
-                                type: _addressType,
-                                addressLine: _addressLineController.text,
-                                city: _cityController.text,
-                                state: _stateController.text,
-                                zipCode: _zipCodeController.text,
-                                phoneNumber: _phoneController.text,
-                              );
                               final auth = Provider.of<AuthProvider>(context, listen: false);
                               final token = auth.user?.token ?? '';
-                              addressProvider.addAddress(newAddr, token);
+                              if (existingAddress != null) {
+                                final updatedAddr = Address(
+                                  id: existingAddress.id,
+                                  type: _addressType,
+                                  addressLine: _addressLineController.text,
+                                  city: _cityController.text,
+                                  state: _stateController.text,
+                                  zipCode: _zipCodeController.text,
+                                  phoneNumber: _phoneController.text,
+                                );
+                                addressProvider.updateAddress(existingAddress.id, updatedAddr, token);
+                              } else {
+                                final newAddr = Address(
+                                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                                  type: _addressType,
+                                  addressLine: _addressLineController.text,
+                                  city: _cityController.text,
+                                  state: _stateController.text,
+                                  zipCode: _zipCodeController.text,
+                                  phoneNumber: _phoneController.text,
+                                );
+                                addressProvider.addAddress(newAddr, token);
+                              }
                               // Clear fields
                               _addressLineController.clear();
                               _cityController.clear();
@@ -234,11 +443,58 @@ class _AddressScreenState extends State<AddressScreen> {
                             }
                           },
                           child: Text(
-                            "Save Address",
+                            existingAddress != null ? "Save Changes" : "Save Address",
                             style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white),
                           ),
                         ),
                       ),
+                      if (existingAddress != null) ...[
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Colors.red, width: 1.2),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            onPressed: () async {
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: Text("Delete Address", style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+                                  content: Text("Are you sure you want to delete this address?", style: GoogleFonts.outfit()),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context, false),
+                                      child: Text("Cancel", style: GoogleFonts.outfit(color: Colors.grey)),
+                                    ),
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context, true),
+                                      child: Text("Delete", style: GoogleFonts.outfit(color: Colors.red, fontWeight: FontWeight.bold)),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (confirm == true) {
+                                final auth = Provider.of<AuthProvider>(context, listen: false);
+                                final token = auth.user?.token ?? '';
+                                await addressProvider.removeAddress(existingAddress.id, token);
+                                _addressLineController.clear();
+                                _cityController.clear();
+                                _stateController.clear();
+                                _zipCodeController.clear();
+                                _phoneController.clear();
+                                Navigator.pop(context); // Close sheet
+                              }
+                            },
+                            child: Text(
+                              "Delete Address",
+                              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.red),
+                            ),
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 24),
                     ],
                   ),
@@ -418,11 +674,18 @@ class _AddressScreenState extends State<AddressScreen> {
                                           ],
                                         ),
                                       ),
-                                      // Right Chevron or Edit (Optional)
-                                      Icon(
-                                        Icons.chevron_right_rounded,
-                                        color: Colors.grey[400],
-                                        size: 20,
+                                      // Right Edit Button
+                                      IconButton(
+                                        icon: Icon(
+                                          Icons.edit_outlined,
+                                          color: Colors.grey[500],
+                                          size: 20,
+                                        ),
+                                        constraints: const BoxConstraints(),
+                                        padding: EdgeInsets.zero,
+                                        onPressed: () {
+                                          _showAddAddressSheet(addressProvider, existingAddress: addr);
+                                        },
                                       ),
                                     ],
                                   ),

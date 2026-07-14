@@ -14,8 +14,11 @@ import 'screens/auth/login_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/splash/splash_screen.dart';
 import 'utils/theme.dart';
+import 'services/remote_config_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await RemoteConfigService().initialize();
   runApp(
     MultiProvider(
       providers: [
