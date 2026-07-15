@@ -169,13 +169,39 @@ class ProductCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 6),
-                Text(
-                  "₹${product.price}",
-                  style: GoogleFonts.outfit(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                    color: isOutOfStock ? Colors.grey : Colors.black,
-                  ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      "₹${product.price.toStringAsFixed(0)}",
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        color: isOutOfStock ? Colors.grey : Colors.black,
+                      ),
+                    ),
+                    if (product.originalPrice > product.price) ...[
+                      const SizedBox(width: 6),
+                      Text(
+                        "₹${product.originalPrice.toStringAsFixed(0)}",
+                        style: GoogleFonts.outfit(
+                          decoration: TextDecoration.lineThrough,
+                          fontSize: 11,
+                          color: Colors.grey[500],
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        "${((product.originalPrice - product.price) / product.originalPrice * 100).round()}% OFF",
+                        style: GoogleFonts.outfit(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ],
             ),

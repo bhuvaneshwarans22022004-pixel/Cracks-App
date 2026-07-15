@@ -1,5 +1,5 @@
-name: mobile
-description: "A new Flutter project."
+name: festivekart
+description: "FestiveKart a complete festival needs"
 publish_to: 'none' 
 
 version: 1.0.0+1
@@ -24,6 +24,7 @@ dependencies:
   image_picker_for_web: ^3.0.2
   firebase_core: ^2.27.0
   firebase_remote_config: ^4.3.8
+  url_launcher: ^6.3.0
 
 dev_dependencies:
   flutter_test:

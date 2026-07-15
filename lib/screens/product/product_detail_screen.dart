@@ -29,6 +29,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Map<String, dynamic> _getPricing(Product product) {
+    if (product.originalPrice > product.price) {
+      final double originalPrice = product.originalPrice;
+      final int discountPercent = (((originalPrice - product.price) / originalPrice) * 100).round();
+      return {
+        "originalPrice": originalPrice,
+        "discountPercent": discountPercent,
+      };
+    }
     final int hash = product.name.codeUnits.fold(0, (prev, element) => prev + element);
     final double discountFactor = 1.35 + (hash % 4) * 0.08; // 1.35, 1.43, 1.51, 1.59
     final double originalPrice = (product.price * discountFactor).roundToDouble();

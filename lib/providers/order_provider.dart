@@ -30,14 +30,17 @@ class OrderProvider with ChangeNotifier {
 
   Future<String?> createOrder(Map<String, dynamic> orderData, String token) async {
     try {
+      print("[Order API] Sending order data: ${jsonEncode(orderData)}");
       final response = await ApiService.post('orders', orderData, token: token);
+      print("[Order API] createOrder status code: ${response.statusCode}");
+      print("[Order API] createOrder body: ${response.body}");
       if (response.statusCode == 201) {
         final Map<String, dynamic> data = jsonDecode(response.body);
         return data['_id'] as String?;
       }
       return null;
     } catch (e) {
-      print(e);
+      print("[Order API] Error in createOrder: $e");
       return null;
     }
   }

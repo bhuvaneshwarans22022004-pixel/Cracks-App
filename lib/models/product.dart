@@ -4,6 +4,7 @@ class Product {
   final String tamilName;
   final String description;
   final double price;
+  final double originalPrice;
   final String category;
   final String image;
   final int countInStock;
@@ -16,6 +17,7 @@ class Product {
     required this.tamilName,
     required this.description,
     required this.price,
+    this.originalPrice = 0.0,
     required this.category,
     required this.image,
     required this.countInStock,
@@ -30,6 +32,7 @@ class Product {
       tamilName: json['tamilName'] ?? '',
       description: json['description'],
       price: json['price'].toDouble(),
+      originalPrice: json['originalPrice']?.toDouble() ?? 0.0,
       category: json['category'],
       image: json['image'],
       countInStock: json['countInStock'],
@@ -45,6 +48,7 @@ class Product {
       'tamilName': tamilName,
       'description': description,
       'price': price,
+      'originalPrice': originalPrice,
       'category': category,
       'image': image,
       'countInStock': countInStock,

@@ -3,8 +3,8 @@ class AppConstants {
   static const String appName = 'FestiveKart';
   
   // Payment credentials
-  static String upiId = '9361505658@ybl';
-  static String gpayNumber = '9361505658';
+  static String upiId = 'gokulelangovan7999@okicici';
+  static String gpayNumber = '8248188398';
 
   // Colors
   static const int primaryColor = 0xFFD45D27; // Rust Orange

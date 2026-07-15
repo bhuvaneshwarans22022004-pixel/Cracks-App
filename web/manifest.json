@@ -1,11 +1,11 @@
 {
-    "name": "mobile",
-    "short_name": "mobile",
+    "name": "FestiveKart",
+    "short_name": "FestiveKart",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#FF8C00",
+    "theme_color": "#FF8C00",
+    "description": "FestiveKart - Premium crackers, gifts and decorations for all your celebrations.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
