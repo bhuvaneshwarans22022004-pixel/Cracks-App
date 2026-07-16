@@ -12,7 +12,52 @@
           "package_name": "festivekart.in"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "734262498360-g97lo85t9e3jlvut8dqte9g6vqcm4ef5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "festivekart.in",
+            "certificate_hash": "f42d2b2d4d4e7b1168887d6aa67fd10f0354ca36"
+          }
+        },
+        {
+          "client_id": "734262498360-h04uigg8riujusd6u9g49of619nv0jo8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "festivekart.in",
+            "certificate_hash": "3948c294acf67c7ef9101cd7f85212cba4cb86fe"
+          }
+        },
+        {
+          "client_id": "734262498360-hqnjgfaoti7nt871lhedi1ro308r6ilv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "festivekart.in",
+            "certificate_hash": "079957ba46605d714545e6ce36c5e45856760001"
+          }
+        },
+        {
+          "client_id": "734262498360-omgg1t5uuccdtl0m7sr60pklqrp59v8g.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "festivekart.in",
+            "certificate_hash": "88e83c38757784ccb8baffe0cf7b50ef10a3c1b5"
+          }
+        },
+        {
+          "client_id": "734262498360-vkok6ekmssooqfsbb2crkptngij649rs.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "festivekart.in",
+            "certificate_hash": "633fd6744b1d1d9ad5d46f8e648209bfdfb0c573"
+          }
+        },
+        {
+          "client_id": "734262498360-kaa955ci39o54d2nopts87m4m1i2d3ok.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAk8s3xuL_jO5NZAygrWImiO8tfyNU7XYQ"
@@ -20,7 +65,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "734262498360-kaa955ci39o54d2nopts87m4m1i2d3ok.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "734262498360-tcrvkscoi8uh76ihu88slribpkgbmu45.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "festivekart.in"
+              }
+            }
+          ]
         }
       }
     }

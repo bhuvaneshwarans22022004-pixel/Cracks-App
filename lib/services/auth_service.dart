@@ -40,12 +40,13 @@ class AuthService {
     return null;
   }
 
-  Future<User?> updateProfile(String name, String phone, String? profileImage, String token) async {
+  Future<User?> updateProfile(String name, String phone, String? email, String? profileImage, String token) async {
     final response = await ApiService.put(
       'auth/profile',
       {
         'name': name,
         'phone': phone,
+        if (email != null) 'email': email,
         if (profileImage != null) 'profileImage': profileImage,
       },
       token: token,
@@ -59,6 +60,38 @@ class AuthService {
       print('Profile update failed: ${response.statusCode} - ${response.body}');
     }
     return null;
+  }
+
+  Future<User?> firebaseLogin(String idToken) async {
+    final response = await ApiService.post('auth/firebase-login', {
+      'idToken': idToken,
+    });
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final userJson = data['user'] ?? data;
+      return User.fromJson(userJson, token: data['token']);
+    } else {
+      print('Firebase login failed: ${response.statusCode} - ${response.body}');
+    }
+    return null;
+  }
+
+  Future<User?> linkIdentity(String idToken, String token) async {
+    final response = await ApiService.post(
+      'auth/link-identity',
+      { 'idToken': idToken },
+      token: token,
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final userJson = data['user'] ?? data;
+      return User.fromJson(userJson, token: token);
+    } else {
+      print('Link identity failed: ${response.statusCode} - ${response.body}');
+      throw Exception(jsonDecode(response.body)['message'] ?? 'Identity linking failed');
+    }
   }
 
   Future<String?> uploadProfileImage(List<int> bytes, String filename, String token) async {

@@ -67,14 +67,20 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> updateProfile(String name, String phone) async {
+  Future<bool> updateProfile(String name, String phone, {String? email}) async {
     if (_user == null || _user!.token == null) return false;
 
     _isLoading = true;
     notifyListeners();
 
     try {
-      final updatedUser = await _authService.updateProfile(name, phone, _user!.profileImage, _user!.token!);
+      final updatedUser = await _authService.updateProfile(
+        name,
+        phone,
+        email ?? _user!.email,
+        _user!.profileImage,
+        _user!.token!,
+      );
       if (updatedUser != null) {
         _user = updatedUser;
         return true;
@@ -100,6 +106,7 @@ class AuthProvider with ChangeNotifier {
         final updatedUser = await _authService.updateProfile(
           _user!.name,
           _user!.phone,
+          _user!.email,
           imageUrl,
           _user!.token!,
         );
@@ -186,6 +193,49 @@ class AuthProvider with ChangeNotifier {
       return await _authService.changePassword(currentPassword, newPassword, _user!.token!);
     } catch (e) {
       print('Change password error: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+    return false;
+  }
+
+  Future<bool> loginWithFirebaseToken(String idToken) async {
+    _isLoading = true;
+    _isGuestMode = false;
+    notifyListeners();
+
+    try {
+      final user = await _authService.firebaseLogin(idToken);
+      if (user != null) {
+        _user = user;
+        await StorageService.saveToken(user.token!);
+        return true;
+      }
+    } catch (e) {
+      print('Firebase login provider error: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+    return false;
+  }
+
+  Future<bool> linkFirebaseIdentity(String idToken) async {
+    if (_user == null || _user!.token == null) return false;
+
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final updatedUser = await _authService.linkIdentity(idToken, _user!.token!);
+      if (updatedUser != null) {
+        _user = updatedUser;
+        return true;
+      }
+    } catch (e) {
+      print('Link identity provider error: $e');
+      rethrow;
     } finally {
       _isLoading = false;
       notifyListeners();

@@ -22,6 +22,7 @@ import '../wishlist/wishlist_screen.dart';
 import '../order/order_history_screen.dart';
 import '../notifications/notification_screen.dart';
 import '../settings/settings_screen.dart';
+import '../../services/update_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../models/product.dart';
 import '../product/product_detail_screen.dart';
@@ -58,9 +59,9 @@ class _HomeScreenState extends State<HomeScreen> {
     // Load saved settings from last session
     _loadSavedValues();
 
-    // Auto-fetch products, banners, orders, and addresses
     Future.delayed(Duration.zero, () {
       if (!mounted) return;
+      UpdateService.checkForUpdate(context);
       Provider.of<ProductProvider>(context, listen: false).fetchProducts();
       Provider.of<BannerProvider>(context, listen: false).fetchBanners();
       final auth = Provider.of<AuthProvider>(context, listen: false);

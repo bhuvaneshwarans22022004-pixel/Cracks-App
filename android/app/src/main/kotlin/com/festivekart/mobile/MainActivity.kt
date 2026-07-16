@@ -1,5 +1,1 @@
-package com.festivekart.mobile
-
-import io.flutter.embedding.android.FlutterActivity
-
-class MainActivity : FlutterActivity()
+// Deprecated: package moved to festivekart.in

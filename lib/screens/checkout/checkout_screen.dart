@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../widgets/profile_completion_sheet.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -90,6 +91,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   height: 55,
                   child: ElevatedButton(
                     onPressed: () async {
+                      if (auth.user?.phone == null || auth.user!.phone!.isEmpty) {
+                        ProfileCompletionSheet.show(
+                          context,
+                          isPhoneOnly: true,
+                          onCompleted: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("Phone verified! You can now place your order.")),
+                            );
+                          },
+                        );
+                        return;
+                      }
+
                       // Prepare order data
                       final orderData = {
                         'orderItems': cart.items.values.map((item) => {
