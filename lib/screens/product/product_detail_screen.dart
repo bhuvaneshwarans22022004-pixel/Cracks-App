@@ -18,15 +18,6 @@ class ProductDetailScreen extends StatefulWidget {
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   int _quantity = 1;
 
-  String _getProductPackSuffix(Product product) {
-    final name = product.name.toLowerCase();
-    if (name.contains("sky shot")) return "(Pack of 1)";
-    if (name.contains("rocket")) return "(Pack of 5)";
-    if (name.contains("sparkler")) return "(Pack of 10)";
-    if (name.contains("ladi") || name.contains("bomb")) return "(Pack of 10)";
-    if (name.contains("flower") || name.contains("pot")) return "(Pack of 5)";
-    return "(Pack of 1)";
-  }
 
   Map<String, dynamic> _getPricing(Product product) {
     if (product.originalPrice > product.price) {
@@ -143,7 +134,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
                 // 2. Title & Pack size
                 Text(
-                  "${product.name} ${_getProductPackSuffix(product)}",
+                  "${product.name} (Pack of ${product.packSize})",
                   style: GoogleFonts.outfit(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,

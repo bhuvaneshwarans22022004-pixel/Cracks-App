@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/auth_provider.dart';
@@ -18,6 +20,43 @@ import 'services/remote_config_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  try {
+    bool isInitialized = false;
+    try {
+      isInitialized = Firebase.apps.isNotEmpty;
+    } catch (_) {
+      isInitialized = false;
+    }
+
+    if (!isInitialized) {
+      if (kIsWeb) {
+        await Firebase.initializeApp(
+          options: const FirebaseOptions(
+            apiKey: "AIzaSyBkVKhTQyRBnmgU3sKmjsnKRyLalRQc8QQ",
+            authDomain: "festivekart-101.firebaseapp.com",
+            appId: "1:734262498360:web:c73f1f1053f1f615bf82cd",
+            messagingSenderId: "734262498360",
+            projectId: "festivekart-101",
+            storageBucket: "festivekart-101.firebasestorage.app",
+            measurementId: "G-S8VHK4MQ9B",
+          ),
+        );
+      } else {
+        await Firebase.initializeApp(
+          options: const FirebaseOptions(
+            apiKey: "AIzaSyAk8s3xuL_jO5NZAygrWImiO8tfyNU7XYQ",
+            appId: "1:734262498360:android:6eeb3a130fc5fac0bf82cd",
+            messagingSenderId: "734262498360",
+            projectId: "festivekart-101",
+            storageBucket: "festivekart-101.firebasestorage.app",
+          ),
+        );
+      }
+    }
+  } catch (e, stackTrace) {
+    print("Firebase initialization error: $e");
+    print("StackTrace: $stackTrace");
+  }
   await RemoteConfigService().initialize();
   runApp(
     MultiProvider(
@@ -66,7 +105,7 @@ class AuthWrapper extends StatefulWidget {
 }
 
 class _AuthWrapperState extends State<AuthWrapper> {
-  late Future<List<dynamic>> _initializationFuture;
+  late Future<List<Object?>> _initializationFuture;
 
   @override
   void initState() {
@@ -75,8 +114,10 @@ class _AuthWrapperState extends State<AuthWrapper> {
       Provider.of<AuthProvider>(context, listen: false).tryAutoLogin().then((loggedIn) {
         if (loggedIn) {
           final auth = Provider.of<AuthProvider>(context, listen: false);
-          Provider.of<AddressProvider>(context, listen: false).fetchAddresses(auth.user!.token!);
-          Provider.of<WishlistProvider>(context, listen: false).fetchWishlist(auth.user!.token!);
+          if (auth.user != null && auth.user!.token != null) {
+            Provider.of<AddressProvider>(context, listen: false).fetchAddresses(auth.user!.token!);
+            Provider.of<WishlistProvider>(context, listen: false).fetchWishlist(auth.user!.token!);
+          }
         }
         return loggedIn;
       }),
@@ -86,7 +127,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<dynamic>>(
+    return FutureBuilder<List<Object?>>(
       future: _initializationFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {

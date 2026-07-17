@@ -13,15 +13,27 @@ class RemoteConfigService {
   bool get isInitialized => _isInitialized;
 
   Future<void> initialize() async {
+    if (kIsWeb) {
+      _isInitialized = true;
+      log('Remote Config initialized (bypassed on Web).');
+      return;
+    }
     try {
       // 1. Initialize Firebase using pure Dart options to support all platforms without google-services.json
-      if (Firebase.apps.isEmpty) {
+      bool isInitialized = false;
+      try {
+        isInitialized = Firebase.apps.isNotEmpty;
+      } catch (_) {
+        isInitialized = false;
+      }
+
+      if (!isInitialized) {
         await Firebase.initializeApp(
           options: const FirebaseOptions(
-            apiKey: "AIzaSyBkVKhTQyRBnmgU3sKmjsnKRyLalRQc8QQ",
+            apiKey: "AIzaSyAk8s3xuL_jO5NZAygrWImiO8tfyNU7XYQ",
             appId: kIsWeb
                 ? "1:734262498360:web:c73f1f1053f1f615bf82cd"
-                : "1:734262498360:android:c394c8e70a316b23",
+                : "1:734262498360:android:6eeb3a130fc5fac0bf82cd",
             messagingSenderId: "734262498360",
             projectId: "festivekart-101",
             storageBucket: "festivekart-101.firebasestorage.app",
@@ -52,16 +64,18 @@ class RemoteConfigService {
       _updateConstants(remoteConfig);
       _isInitialized = true;
 
-      // 6. Listen for real-time Remote Config updates
-      remoteConfig.onConfigUpdated.listen((event) async {
-        try {
-          await remoteConfig.activate();
-          _updateConstants(remoteConfig);
-          log('Remote Config values dynamically updated in real-time!');
-        } catch (err) {
-          log('Error activating real-time Remote Config updates: $err');
-        }
-      });
+      // 6. Listen for real-time Remote Config updates (mobile only)
+      if (!kIsWeb) {
+        remoteConfig.onConfigUpdated.listen((event) async {
+          try {
+            await remoteConfig.activate();
+            _updateConstants(remoteConfig);
+            log('Remote Config values dynamically updated in real-time!');
+          } catch (err) {
+            log('Error activating real-time Remote Config updates: $err');
+          }
+        });
+      }
     } catch (e) {
       log('Error initializing Firebase Remote Config: $e. Falling back to offline defaults.');
       // Fallback is automatically handled since AppConstants already has correct default values

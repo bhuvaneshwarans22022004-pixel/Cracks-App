@@ -61,7 +61,10 @@ if (-not $projectID) {
 }
 
 # 4. Build Flutter Web application
-Write-Host "`nStep 1: Building Flutter Web App (Release mode)..." -ForegroundColor Cyan
+Write-Host "`nStep 1: Cleaning previous builds..." -ForegroundColor Cyan
+& $flutterPath clean
+
+Write-Host "`nStep 2: Building Flutter Web App (Release mode)..." -ForegroundColor Cyan
 & $flutterPath build web --release
 
 if ($LASTEXITCODE -ne 0) {

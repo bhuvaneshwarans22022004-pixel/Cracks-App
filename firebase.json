@@ -1,6 +1,5 @@
 {
   "hosting": {
-    "site": "festivekart-website",
     "public": "build/web",
     "ignore": [
       "firebase.json",

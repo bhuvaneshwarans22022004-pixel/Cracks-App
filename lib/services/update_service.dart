@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -9,6 +10,7 @@ class UpdateService {
   static bool _hasChecked = false;
 
   static Future<void> checkForUpdate(BuildContext context) async {
+    if (kIsWeb) return; // 🌐 No update checks on Web
     if (_hasChecked) return;
     _hasChecked = true;
 

@@ -8,6 +8,7 @@ class Product {
   final String category;
   final String image;
   final int countInStock;
+  final int packSize;
   final double rating;
   final int numReviews;
 
@@ -21,6 +22,7 @@ class Product {
     required this.category,
     required this.image,
     required this.countInStock,
+    this.packSize = 1,
     this.rating = 0,
     this.numReviews = 0,
   });
@@ -36,6 +38,7 @@ class Product {
       category: json['category'],
       image: json['image'],
       countInStock: json['countInStock'],
+      packSize: json['packSize'] ?? 1,
       rating: json['rating']?.toDouble() ?? 0.0,
       numReviews: json['numReviews'] ?? 0,
     );
@@ -52,6 +55,7 @@ class Product {
       'category': category,
       'image': image,
       'countInStock': countInStock,
+      'packSize': packSize,
       'rating': rating,
       'numReviews': numReviews,
     };

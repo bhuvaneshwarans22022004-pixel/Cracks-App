@@ -7,15 +7,7 @@ import 'address_screen.dart';
 class CartScreen extends StatelessWidget {
   const CartScreen({super.key});
 
-  String _getProductPackSuffix(String name) {
-    final nameLower = name.toLowerCase();
-    if (nameLower.contains("sky shot")) return "(Pack of 1)";
-    if (nameLower.contains("rocket")) return "(Pack of 5)";
-    if (nameLower.contains("sparkler")) return "(Pack of 10)";
-    if (nameLower.contains("ladi") || nameLower.contains("bomb")) return "(Pack of 10)";
-    if (nameLower.contains("flower") || nameLower.contains("pot")) return "(Pack of 5)";
-    return "(Pack of 1)";
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -125,9 +117,12 @@ class CartScreen extends StatelessWidget {
                                 itemCount: cart.items.length,
                                 itemBuilder: (context, index) {
                                   final item = cart.items.values.toList()[index];
-                                  final nameWithSuffix = "${item.product.name} ${_getProductPackSuffix(item.product.name)}";
+                                  final packLabel = item.product.packSize > 1
+                                      ? "(Pack of ${item.product.packSize})"
+                                      : "(Pack of 1)";
+                                  final nameWithSuffix = "${item.product.name} $packLabel";
 
-                                  return Container(
+                                   return Container(
                                     margin: const EdgeInsets.only(bottom: 16),
                                     padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
@@ -142,102 +137,210 @@ class CartScreen extends StatelessWidget {
                                         )
                                       ],
                                     ),
-                                    child: Row(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        // Product Image Container
-                                        Container(
-                                          width: 76,
-                                          height: 76,
-                                          padding: const EdgeInsets.all(8),
-                                          decoration: BoxDecoration(
-                                            color: Colors.grey[50],
-                                            borderRadius: BorderRadius.circular(12),
-                                            border: Border.all(color: Colors.grey[100]!),
-                                          ),
-                                          child: Image.network(
-                                            item.product.image,
-                                            fit: BoxFit.contain,
-                                            errorBuilder: (_, __, ___) => const Icon(
-                                              Icons.celebration,
-                                              color: Color(0xFFFF8C00),
-                                              size: 32,
+                                        Row(
+                                          children: [
+                                            // Product Image Container
+                                            Container(
+                                              width: 76,
+                                              height: 76,
+                                              padding: const EdgeInsets.all(8),
+                                              decoration: BoxDecoration(
+                                                color: Colors.grey[50],
+                                                borderRadius: BorderRadius.circular(12),
+                                                border: Border.all(color: Colors.grey[100]!),
+                                              ),
+                                              child: Image.network(
+                                                item.product.image,
+                                                fit: BoxFit.contain,
+                                                errorBuilder: (_, __, ___) => const Icon(
+                                                  Icons.celebration,
+                                                  color: Color(0xFFFF8C00),
+                                                  size: 32,
+                                                ),
+                                              ),
                                             ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 16),
-                                        // Product Name & Price
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                nameWithSuffix,
-                                                style: GoogleFonts.outfit(
-                                                  fontWeight: FontWeight.w600,
-                                                  fontSize: 14,
-                                                  color: Colors.black87,
-                                                ),
-                                                maxLines: 2,
-                                                overflow: TextOverflow.ellipsis,
+                                            const SizedBox(width: 16),
+                                            // Product Name & Price
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    nameWithSuffix,
+                                                    style: GoogleFonts.outfit(
+                                                      fontWeight: FontWeight.w600,
+                                                      fontSize: 14,
+                                                      color: Colors.black87,
+                                                    ),
+                                                    maxLines: 2,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                  const SizedBox(height: 8),
+                                                  Text(
+                                                    "₹${item.product.price.toStringAsFixed(0)}",
+                                                    style: GoogleFonts.outfit(
+                                                      fontWeight: FontWeight.bold,
+                                                      fontSize: 15,
+                                                      color: Colors.black87,
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
-                                              const SizedBox(height: 8),
-                                              Text(
-                                                "₹${item.product.price.toStringAsFixed(0)}",
-                                                style: GoogleFonts.outfit(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 15,
-                                                  color: Colors.black87,
+                                            ),
+                                            // Premium custom quantity selector
+                                            Container(
+                                              height: 36,
+                                              decoration: BoxDecoration(
+                                                border: Border.all(color: Colors.grey[200]!),
+                                                borderRadius: BorderRadius.circular(10),
+                                                color: Colors.white,
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  GestureDetector(
+                                                    onTap: () => cart.decrementItem(item.product.id),
+                                                    behavior: HitTestBehavior.opaque,
+                                                    child: const Padding(
+                                                      padding: EdgeInsets.symmetric(horizontal: 10),
+                                                      child: Icon(Icons.remove, size: 14, color: Colors.black54),
+                                                    ),
+                                                  ),
+                                                  Container(
+                                                    width: 1,
+                                                    height: 20,
+                                                    color: Colors.grey[200],
+                                                  ),
+                                                  Padding(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                                                    child: Text(
+                                                      '${item.quantity}',
+                                                      style: GoogleFonts.outfit(
+                                                        fontWeight: FontWeight.bold,
+                                                        fontSize: 13,
+                                                        color: Colors.black87,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  Container(
+                                                    width: 1,
+                                                    height: 20,
+                                                    color: Colors.grey[200],
+                                                  ),
+                                                  GestureDetector(
+                                                    onTap: () => cart.addItem(item.product),
+                                                    behavior: HitTestBehavior.opaque,
+                                                    child: const Padding(
+                                                      padding: EdgeInsets.symmetric(horizontal: 10),
+                                                      child: Icon(Icons.add, size: 14, color: Colors.black54),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        // Divider + Remove button
+                                        const SizedBox(height: 10),
+                                        Divider(height: 1, color: Colors.grey[100]),
+                                        const SizedBox(height: 6),
+                                        GestureDetector(
+                                          onTap: () {
+                                            showModalBottomSheet(
+                                              context: context,
+                                              shape: const RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                                              ),
+                                              builder: (ctx) => Padding(
+                                                padding: const EdgeInsets.fromLTRB(24, 20, 24, 30),
+                                                child: Column(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Container(
+                                                      width: 40,
+                                                      height: 4,
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.grey[300],
+                                                        borderRadius: BorderRadius.circular(2),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 20),
+                                                    const Icon(Icons.delete_outline, size: 44, color: Color(0xFFFF5722)),
+                                                    const SizedBox(height: 12),
+                                                    Text(
+                                                      "Remove item?",
+                                                      style: GoogleFonts.outfit(
+                                                        fontSize: 18,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: Colors.black87,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 6),
+                                                    Text(
+                                                      "Are you sure you want to remove this item from your cart?",
+                                                      textAlign: TextAlign.center,
+                                                      style: GoogleFonts.outfit(
+                                                        fontSize: 13,
+                                                        color: Colors.grey[600],
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 24),
+                                                    Row(
+                                                      children: [
+                                                        Expanded(
+                                                          child: OutlinedButton(
+                                                            style: OutlinedButton.styleFrom(
+                                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                                              side: BorderSide(color: Colors.grey[300]!),
+                                                              padding: const EdgeInsets.symmetric(vertical: 14),
+                                                            ),
+                                                            onPressed: () => Navigator.pop(ctx),
+                                                            child: Text(
+                                                              "Cancel",
+                                                              style: GoogleFonts.outfit(fontWeight: FontWeight.w600, color: Colors.black87),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        const SizedBox(width: 12),
+                                                        Expanded(
+                                                          child: ElevatedButton(
+                                                            style: ElevatedButton.styleFrom(
+                                                              backgroundColor: const Color(0xFFFF5722),
+                                                              elevation: 0,
+                                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                                              padding: const EdgeInsets.symmetric(vertical: 14),
+                                                            ),
+                                                            onPressed: () {
+                                                              Navigator.pop(ctx);
+                                                              cart.removeItem(item.product.id);
+                                                            },
+                                                            child: Text(
+                                                              "Remove",
+                                                              style: GoogleFonts.outfit(fontWeight: FontWeight.w600, color: Colors.white),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ],
                                                 ),
                                               ),
-                                            ],
-                                          ),
-                                        ),
-                                        // Premium custom quantity selector
-                                        Container(
-                                          height: 36,
-                                          decoration: BoxDecoration(
-                                            border: Border.all(color: Colors.grey[200]!),
-                                            borderRadius: BorderRadius.circular(10),
-                                            color: Colors.white,
-                                          ),
+                                            );
+                                          },
                                           child: Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
-                                              GestureDetector(
-                                                onTap: () => cart.decrementItem(item.product.id),
-                                                behavior: HitTestBehavior.opaque,
-                                                child: const Padding(
-                                                  padding: EdgeInsets.symmetric(horizontal: 10),
-                                                  child: Icon(Icons.remove, size: 14, color: Colors.black54),
-                                                ),
-                                              ),
-                                              Container(
-                                                width: 1,
-                                                height: 20,
-                                                color: Colors.grey[200],
-                                              ),
-                                              Padding(
-                                                padding: const EdgeInsets.symmetric(horizontal: 12),
-                                                child: Text(
-                                                  '${item.quantity}',
-                                                  style: GoogleFonts.outfit(
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 13,
-                                                    color: Colors.black87,
-                                                  ),
-                                                ),
-                                              ),
-                                              Container(
-                                                width: 1,
-                                                height: 20,
-                                                color: Colors.grey[200],
-                                              ),
-                                              GestureDetector(
-                                                onTap: () => cart.addItem(item.product),
-                                                behavior: HitTestBehavior.opaque,
-                                                child: const Padding(
-                                                  padding: EdgeInsets.symmetric(horizontal: 10),
-                                                  child: Icon(Icons.add, size: 14, color: Colors.black54),
+                                              Icon(Icons.delete_outline, size: 16, color: Colors.red[400]),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                "Remove",
+                                                style: GoogleFonts.outfit(
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Colors.red[400],
                                                 ),
                                               ),
                                             ],
@@ -246,7 +349,7 @@ class CartScreen extends StatelessWidget {
                                       ],
                                     ),
                                   );
-                                },
+                                 },
                               ),
 
                               const SizedBox(height: 10),

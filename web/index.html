@@ -25,34 +25,22 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="FestiveKart">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="apple-touch-icon" href="icons/Icon-192.PNG">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
   <title>FestiveKart</title>
   <link rel="manifest" href="manifest.json">
+  <!-- Google Sign-In & Identity Services for Web -->
+  <meta name="google-signin-client_id" content="734262498360-kaa955ci39o54d2nopts87m4m1i2d3ok.apps.googleusercontent.com">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <!-- Firebase JS SDK (Compat version required by Flutter Firebase Web plugins) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-remote-config-compat.js"></script>
 </head>
 <body>
-  <!-- The Firebase JS SDK Web Config -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyBkVKhTQyRBnmgU3sKmjsnKRyLalRQc8QQ",
-      authDomain: "festivekart-101.firebaseapp.com",
-      projectId: "festivekart-101",
-      storageBucket: "festivekart-101.firebasestorage.app",
-      messagingSenderId: "734262498360",
-      appId: "1:734262498360:web:c73f1f1053f1f615bf82cd",
-      measurementId: "G-S8VHK4MQ9B"
-    };
-
-    // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
-  </script>
 
   <div id="loading-splash" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #021B4A; display: flex; justify-content: center; align-items: center; z-index: 99999; margin: 0; overflow: hidden; box-sizing: border-box;">
     <svg width="1080" height="1920" viewBox="0 0 1080 1920" style="max-width: 100%; max-height: 100%; object-fit: contain;" xmlns="http://www.w3.org/2000/svg">
