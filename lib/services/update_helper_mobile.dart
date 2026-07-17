@@ -33,21 +33,57 @@ Future<void> downloadAndInstallApkPlatform(BuildContext context, String url) asy
 
     print("[UPDATE] Downloading to: $filePath");
 
+    double progress = 0.0;
+    StateSetter? dialogSetState;
+
     // Show a progress dialog
     if (context.mounted) {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (progressContext) => const AlertDialog(
-          title: Text("Downloading Update..."),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              LinearProgressIndicator(color: Color(0xFFD45D27)),
-              SizedBox(height: 16),
-              Text("Please wait while we download the latest version."),
-            ],
-          ),
+        builder: (progressContext) => StatefulBuilder(
+          builder: (context, setState) {
+            dialogSetState = setState;
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: const Text(
+                "Downloading Update...",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      color: const Color(0xFFD45D27),
+                      backgroundColor: Colors.grey[200],
+                      minHeight: 8,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "Please wait...",
+                        style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                      ),
+                      Text(
+                        "${(progress * 100).toStringAsFixed(0)}%",
+                        style: const TextStyle(
+                          color: Color(0xFFD45D27),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
         ),
       );
     }
@@ -58,7 +94,12 @@ Future<void> downloadAndInstallApkPlatform(BuildContext context, String url) asy
       filePath,
       onReceiveProgress: (received, total) {
         if (total != -1) {
-          print("Downloading: ${(received / total * 100).toStringAsFixed(0)}%");
+          final newProgress = received / total;
+          if (dialogSetState != null) {
+            dialogSetState!(() {
+              progress = newProgress;
+            });
+          }
         }
       },
     );
