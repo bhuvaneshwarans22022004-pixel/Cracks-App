@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models/product.dart';
 import '../providers/auth_provider.dart';
 import '../providers/wishlist_provider.dart';
+import '../providers/cart_provider.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/product/product_detail_screen.dart';
 
@@ -170,37 +171,129 @@ class ProductCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      "₹${product.price.toStringAsFixed(0)}",
-                      style: GoogleFonts.outfit(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                        color: isOutOfStock ? Colors.grey : Colors.black,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                            textBaseline: TextBaseline.alphabetic,
+                            children: [
+                              Text(
+                                "₹${product.price.toStringAsFixed(0)}",
+                                style: GoogleFonts.outfit(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: isOutOfStock ? Colors.grey : Colors.black,
+                                ),
+                              ),
+                              if (product.originalPrice > product.price) ...[
+                                const SizedBox(width: 4),
+                                Text(
+                                  "₹${product.originalPrice.toStringAsFixed(0)}",
+                                  style: GoogleFonts.outfit(
+                                    decoration: TextDecoration.lineThrough,
+                                    fontSize: 9,
+                                    color: Colors.grey[500],
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          if (product.originalPrice > product.price) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              "${((product.originalPrice - product.price) / product.originalPrice * 100).round()}% OFF",
+                              style: GoogleFonts.outfit(
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.green,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
-                    if (product.originalPrice > product.price) ...[
-                      const SizedBox(width: 6),
-                      Text(
-                        "₹${product.originalPrice.toStringAsFixed(0)}",
-                        style: GoogleFonts.outfit(
-                          decoration: TextDecoration.lineThrough,
-                          fontSize: 11,
-                          color: Colors.grey[500],
-                        ),
+                    if (!isOutOfStock)
+                      Consumer<CartProvider>(
+                        builder: (context, cart, _) {
+                          final cartItem = cart.items[product.id];
+                          if (cartItem == null) {
+                            return InkWell(
+                              onTap: () {
+                                cart.addItem(product);
+                                ScaffoldMessenger.of(context).clearSnackBars();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      "Added ${product.name} to Cart 🛒",
+                                      style: GoogleFonts.outfit(fontWeight: FontWeight.w600, color: Colors.white),
+                                    ),
+                                    backgroundColor: const Color(0xFFFF8C00),
+                                    duration: const Duration(seconds: 2),
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: const Color(0xFFFF8C00), width: 1.2),
+                                  borderRadius: BorderRadius.circular(8),
+                                  color: Colors.white,
+                                ),
+                                child: Text(
+                                  "ADD",
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFFFF8C00),
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
+                            );
+                          } else {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFF8C00),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  InkWell(
+                                    onTap: () => cart.decrementItem(product.id),
+                                    child: const Padding(
+                                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      child: Icon(Icons.remove, size: 12, color: Colors.white),
+                                    ),
+                                  ),
+                                  Text(
+                                    '${cartItem.quantity}',
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  InkWell(
+                                    onTap: () => cart.addItem(product),
+                                    child: const Padding(
+                                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      child: Icon(Icons.add, size: 12, color: Colors.white),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+                        },
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        "${((product.originalPrice - product.price) / product.originalPrice * 100).round()}% OFF",
-                        style: GoogleFonts.outfit(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green,
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ],

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../models/order.dart';
+import 'invoice_screen.dart';
+import 'utr_dialog.dart';
 
 class OrderTrackingScreen extends StatelessWidget {
   final Order order;
@@ -430,6 +432,72 @@ class OrderTrackingScreen extends StatelessWidget {
                             ],
                           ),
                         ),
+                        if (order.transactionId == 'PENDING') ...[
+                          const SizedBox(height: 16),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF44336).withOpacity(0.08),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: const Color(0xFFF44336).withOpacity(0.3)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.warning_amber_rounded, color: Color(0xFFF44336), size: 20),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        "Payment Verification Pending",
+                                        style: GoogleFonts.outfit(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                          color: const Color(0xFFF44336),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        "Please enter the 12-digit UTR/Reference ID to confirm payment.",
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 11,
+                                          color: Colors.grey[700],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFF44336),
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  onPressed: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (context) => UtrDialog(orderId: order.id),
+                                    );
+                                  },
+                                  child: Text(
+                                    "Enter",
+                                    style: GoogleFonts.outfit(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 32),
 
                         // Timeline steps
@@ -472,29 +540,67 @@ class OrderTrackingScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                // Footer button
+                // Footer buttons
                 Padding(
                   padding: const EdgeInsets.all(24),
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Color(0xFFFF8C00), width: 1.5),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: SizedBox(
+                          height: 52,
+                          child: OutlinedButton.icon(
+                            icon: const Icon(Icons.receipt_long_rounded, color: Color(0xFFFF8C00), size: 18),
+                            label: Text(
+                              "View Invoice",
+                              style: GoogleFonts.outfit(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFFFF8C00),
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Color(0xFFFF8C00), width: 1.5),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => InvoiceScreen(order: order),
+                                ),
+                              );
+                            },
+                          ),
                         ),
                       ),
-                      onPressed: () => _showMapModal(context),
-                      child: Text(
-                        "Track on Map",
-                        style: GoogleFonts.outfit(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFFFF8C00),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: SizedBox(
+                          height: 52,
+                          child: ElevatedButton.icon(
+                            icon: const Icon(Icons.map_rounded, color: Colors.white, size: 18),
+                            label: Text(
+                              "Track on Map",
+                              style: GoogleFonts.outfit(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFFF8C00),
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed: () => _showMapModal(context),
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
               ],

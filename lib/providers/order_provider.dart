@@ -6,9 +6,11 @@ import '../services/api_service.dart';
 class OrderProvider with ChangeNotifier {
   List<Order> _orders = [];
   bool _isLoading = false;
+  String? _errorMessage;
 
   List<Order> get orders => _orders;
   bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
 
   Future<void> fetchOrders(String token) async {
     _isLoading = true;
@@ -29,18 +31,22 @@ class OrderProvider with ChangeNotifier {
   }
 
   Future<String?> createOrder(Map<String, dynamic> orderData, String token) async {
+    _errorMessage = null;
     try {
       print("[Order API] Sending order data: ${jsonEncode(orderData)}");
       final response = await ApiService.post('orders', orderData, token: token);
       print("[Order API] createOrder status code: ${response.statusCode}");
       print("[Order API] createOrder body: ${response.body}");
+      final Map<String, dynamic> data = jsonDecode(response.body);
       if (response.statusCode == 201) {
-        final Map<String, dynamic> data = jsonDecode(response.body);
         return data['_id'] as String?;
+      } else {
+        _errorMessage = data['message'] ?? 'Failed to place order';
+        return null;
       }
-      return null;
     } catch (e) {
       print("[Order API] Error in createOrder: $e");
+      _errorMessage = 'An error occurred. Please try again.';
       return null;
     }
   }

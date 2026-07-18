@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/order_provider.dart';
+import '../order/invoice_screen.dart';
 import '../home/home_screen.dart';
 
 class OrderPlacedScreen extends StatelessWidget {
@@ -176,7 +180,6 @@ class OrderPlacedScreen extends StatelessWidget {
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 48),
-
                         // Action Buttons: Track Order
                         SizedBox(
                           width: double.infinity,
@@ -211,8 +214,71 @@ class OrderPlacedScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 16),
+                        
+                        // View Invoice Button
+                        SizedBox(
+                          width: double.infinity,
+                          height: 52,
+                          child: OutlinedButton.icon(
+                            key: const Key('view_invoice_btn'),
+                            icon: const Icon(Icons.receipt_long_rounded, color: Color(0xFFFF5722)),
+                            label: Text(
+                              "View Invoice",
+                              style: GoogleFonts.outfit(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFFFF5722),
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Color(0xFFFF5722), width: 1.5),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed: () async {
+                              final auth = Provider.of<AuthProvider>(context, listen: false);
+                              final token = auth.user?.token;
+                              if (token == null) return;
+                              
+                              showDialog(
+                                context: context,
+                                barrierDismissible: false,
+                                builder: (context) => const Center(
+                                  child: CircularProgressIndicator(color: Color(0xFFFF8C00)),
+                                ),
+                              );
 
-                        // Continue Shopping Button
+                              try {
+                                await Provider.of<OrderProvider>(context, listen: false).fetchOrders(token);
+                                
+                                if (context.mounted) {
+                                  Navigator.pop(context); // Close loading dialog
+                                  
+                                  final orderProvider = Provider.of<OrderProvider>(context, listen: false);
+                                  final order = orderProvider.orders.firstWhere(
+                                    (o) => o.id == orderId,
+                                  );
+                                  
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => InvoiceScreen(order: order),
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  Navigator.pop(context); // Close loading dialog
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text("Failed to fetch invoice. Please try again.")),
+                                  );
+                                }
+                              }
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 16),                        // Continue Shopping Button
                         SizedBox(
                           width: double.infinity,
                           height: 52,

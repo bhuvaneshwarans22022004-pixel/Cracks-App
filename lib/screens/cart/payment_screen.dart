@@ -526,7 +526,70 @@ class _UPIDialogContentState extends State<_UPIDialogContent> with WidgetsBindin
           _isSubmitting = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Failed to place order. Try again.")),
+          SnackBar(content: Text(widget.orderProvider.errorMessage ?? "Failed to place order. Try again.")),
+        );
+      }
+    }
+  }
+
+  Future<void> _submitOrderLater() async {
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    final token = widget.auth.user?.token;
+    if (token == null) {
+      setState(() {
+        _isSubmitting = false;
+      });
+      return;
+    }
+
+    final orderData = {
+      'orderItems': widget.cart.items.values.map((item) => {
+        'name': item.product.name,
+        'qty': item.quantity,
+        'image': item.product.image,
+        'price': item.product.price,
+        'product': item.product.id,
+      }).toList(),
+      'shippingAddress': widget.selectedAddress.formattedAddress,
+      'paymentMethod': 'UPI',
+      'paymentResult': {
+        'id': 'PENDING',
+        'status': 'Pending UTR Submission',
+        'update_time': DateTime.now().toIso8601String(),
+        'email_address': widget.auth.user?.email ?? '',
+      },
+      'itemsPrice': widget.totalMrp,
+      'taxPrice': 0.0,
+      'shippingPrice': widget.deliveryCharge,
+      'totalPrice': widget.toPay,
+    };
+
+    final orderId = await widget.orderProvider.createOrder(orderData, token);
+
+    if (orderId != null) {
+      widget.cart.clear();
+      if (mounted) {
+        Navigator.pop(context); // Close dialog
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OrderPlacedScreen(
+              orderId: orderId,
+              toPay: widget.toPay,
+            ),
+          ),
+        );
+      }
+    } else {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(widget.orderProvider.errorMessage ?? "Failed to place order. Try again.")),
         );
       }
     }
@@ -810,6 +873,13 @@ class _UPIDialogContentState extends State<_UPIDialogContent> with WidgetsBindin
             });
           },
           child: Text("Back", style: GoogleFonts.outfit(color: Colors.grey[600], fontWeight: FontWeight.bold)),
+        ),
+        TextButton(
+          onPressed: _isSubmitting ? null : _submitOrderLater,
+          child: Text(
+            "Submit UTR Later",
+            style: GoogleFonts.outfit(color: const Color(0xFFFF8C00), fontWeight: FontWeight.bold),
+          ),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(

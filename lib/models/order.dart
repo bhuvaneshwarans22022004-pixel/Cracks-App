@@ -6,6 +6,12 @@ class Order {
   final DateTime createdAt;
   final String shippingAddress;
   final String paymentMethod;
+  final bool isPaid;
+  final DateTime? paidAt;
+  final String? transactionId;
+  final String? userPhone;
+  final String? userEmail;
+  final String? userName;
 
   Order({
     required this.id,
@@ -15,6 +21,12 @@ class Order {
     required this.createdAt,
     required this.shippingAddress,
     required this.paymentMethod,
+    this.isPaid = false,
+    this.paidAt,
+    this.transactionId,
+    this.userPhone,
+    this.userEmail,
+    this.userName,
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
@@ -26,6 +38,12 @@ class Order {
       createdAt: DateTime.parse(json['createdAt']),
       shippingAddress: json['shippingAddress'] ?? '',
       paymentMethod: json['paymentMethod'] ?? 'COD',
+      isPaid: json['isPaid'] ?? false,
+      paidAt: json['paidAt'] != null ? DateTime.parse(json['paidAt']) : null,
+      transactionId: json['paymentResult'] != null ? json['paymentResult']['id'] as String? : null,
+      userName: json['user'] != null ? (json['user'] is Map ? json['user']['name'] : null) : null,
+      userPhone: json['user'] != null ? (json['user'] is Map ? json['user']['phone'] : null) : null,
+      userEmail: json['user'] != null ? (json['user'] is Map ? json['user']['email'] : null) : null,
     );
   }
 }

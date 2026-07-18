@@ -1633,7 +1633,7 @@ class _ExploreTabState extends State<ExploreTab> {
   @override
   Widget build(BuildContext context) {
     final allProducts = widget.productProvider.products;
-    final cart = Provider.of<CartProvider>(context, listen: false);
+    final cart = Provider.of<CartProvider>(context);
     
     // 1. Filter logic
     List<Product> filteredProducts = allProducts.where((product) {
@@ -2039,38 +2039,83 @@ class _ExploreTabState extends State<ExploreTab> {
                                           size: 18,
                                         ),
                                         const SizedBox(height: 20),
-                                        // Outlined ADD button
-                                        SizedBox(
-                                          width: 68,
-                                          height: 30,
-                                          child: OutlinedButton(
-                                            style: OutlinedButton.styleFrom(
-                                              side: const BorderSide(color: Color(0xFFFF5722), width: 1.2),
-                                              padding: EdgeInsets.zero,
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(8),
-                                              ),
-                                            ),
-                                            onPressed: product.countInStock > 0 ? () {
-                                              cart.addItem(product);
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                SnackBar(
-                                                  content: Text(
-                                                    "${product.name} added to cart",
-                                                    style: GoogleFonts.outfit(),
-                                                  ),
+                                        // Outlined ADD button or Quantity Selector
+                                        Builder(
+                                          builder: (context) {
+                                            final cartItem = cart.items[product.id];
+                                            if (cartItem != null && cartItem.quantity > 0) {
+                                              return Container(
+                                                height: 30,
+                                                width: 72,
+                                                decoration: BoxDecoration(
+                                                  border: Border.all(color: const Color(0xFFFF5722), width: 1.2),
+                                                  borderRadius: BorderRadius.circular(8),
+                                                  color: Colors.white,
+                                                ),
+                                                child: Row(
+                                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                  children: [
+                                                    GestureDetector(
+                                                      onTap: () => cart.decrementItem(product.id),
+                                                      behavior: HitTestBehavior.opaque,
+                                                      child: const Padding(
+                                                        padding: EdgeInsets.symmetric(horizontal: 6),
+                                                        child: Icon(Icons.remove, size: 12, color: Color(0xFFFF5722)),
+                                                      ),
+                                                    ),
+                                                    Text(
+                                                      '${cartItem.quantity}',
+                                                      style: GoogleFonts.outfit(
+                                                        fontWeight: FontWeight.bold,
+                                                        fontSize: 12,
+                                                        color: const Color(0xFFFF5722),
+                                                      ),
+                                                    ),
+                                                    GestureDetector(
+                                                      onTap: () => cart.addItem(product),
+                                                      behavior: HitTestBehavior.opaque,
+                                                      child: const Padding(
+                                                        padding: EdgeInsets.symmetric(horizontal: 6),
+                                                        child: Icon(Icons.add, size: 12, color: Color(0xFFFF5722)),
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                               );
-                                            } : null,
-                                            child: Text(
-                                              "ADD",
-                                              style: GoogleFonts.outfit(
-                                                color: const Color(0xFFFF5722),
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 12,
+                                            }
+                                            return SizedBox(
+                                              width: 68,
+                                              height: 30,
+                                              child: OutlinedButton(
+                                                style: OutlinedButton.styleFrom(
+                                                  side: const BorderSide(color: Color(0xFFFF5722), width: 1.2),
+                                                  padding: EdgeInsets.zero,
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(8),
+                                                  ),
+                                                ),
+                                                onPressed: product.countInStock > 0 ? () {
+                                                  cart.addItem(product);
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    SnackBar(
+                                                      content: Text(
+                                                        "${product.name} added to cart",
+                                                        style: GoogleFonts.outfit(),
+                                                      ),
+                                                    ),
+                                                  );
+                                                } : null,
+                                                child: Text(
+                                                  "ADD",
+                                                  style: GoogleFonts.outfit(
+                                                    color: const Color(0xFFFF5722),
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
                                               ),
-                                            ),
-                                          ),
+                                            );
+                                          },
                                         ),
                                       ],
                                     ),

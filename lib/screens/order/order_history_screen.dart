@@ -7,6 +7,7 @@ import '../../providers/order_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../home/home_screen.dart';
 import 'order_tracking_screen.dart';
+import 'utr_dialog.dart';
 
 class OrderHistoryScreen extends StatefulWidget {
   const OrderHistoryScreen({super.key});
@@ -140,6 +141,52 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                     ),
                   ],
                 ),
+                if (order.transactionId == 'PENDING') ...[
+                  const SizedBox(height: 12),
+                  const Divider(height: 1),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.warning_amber_rounded, color: Color(0xFFF44336), size: 16),
+                          const SizedBox(width: 6),
+                          Text(
+                            "Payment Pending (No UTR)",
+                            style: GoogleFonts.outfit(
+                              color: const Color(0xFFF44336),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      TextButton.icon(
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          backgroundColor: const Color(0xFFFF8C00).withOpacity(0.08),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        icon: const Icon(Icons.edit_note_rounded, size: 16, color: Color(0xFFFF8C00)),
+                        label: Text(
+                          "Verify Now",
+                          style: GoogleFonts.outfit(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFFFF8C00),
+                          ),
+                        ),
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => UtrDialog(orderId: order.id),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
