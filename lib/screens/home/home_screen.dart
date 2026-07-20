@@ -997,7 +997,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 20),
 
-                  // 4. Categories circular buttons
                   SizedBox(
                     height: 96,
                     child: ListView(
@@ -1007,12 +1006,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         _categoryItem("Crackers", Icons.celebration, const Color(0xFFFF9F1C), "HOT", "Crackers"),
                         _categoryItem("Gift Boxes", Icons.card_giftcard, const Color(0xFFE91E63), "", "Gifts"),
                         _categoryItem("Decorations", Icons.lightbulb_outline_rounded, const Color(0xFFFFD700), "", "Decor"),
+                        _categoryItem("New Arrivals", Icons.auto_awesome, const Color(0xFF7C4DFF), "NEW", "New Arrivals"),
                         _categoryItem("Combo Packs", Icons.inventory_2_outlined, const Color(0xFF00B0FF), "", "Crackers"),
-                        _categoryItem("New Arrivals", Icons.stars_rounded, const Color(0xFF9C27B0), "NEW", "Sweets"),
                         _categoryItem("Best Sellers", Icons.whatshot_rounded, const Color(0xFFFF5722), "", "Wholesale"),
                       ],
+
                     ),
                   ),
+
                   const SizedBox(height: 25),
 
                   // 5. Deals of the day Section
@@ -1465,11 +1466,120 @@ class _ExploreTabState extends State<ExploreTab> {
   double _minRating = 0.0;
   bool _isSearching = false;
 
+  final ScrollController _scrollController = ScrollController();
+  bool _isManualScrolling = false;
+  bool _isScrollingFromUser = false; // true when chip change was triggered by scroll, not chip tap
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+    if (widget.initialCategory != "All" && widget.initialCategory != "Crackers") {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToCategory(widget.initialCategory);
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(ExploreTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Only auto-scroll if the change came from a chip tap (not from _onScroll updating the chip)
+    if (oldWidget.initialCategory != widget.initialCategory && !_isManualScrolling && !_isScrollingFromUser) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToCategory(widget.initialCategory);
+      });
+    }
+    _isScrollingFromUser = false;
+  }
+
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     _searchController.dispose();
     super.dispose();
   }
+
+  void _onScroll() {
+    if (_isManualScrolling) return;
+    final filteredProducts = _getFilteredProducts();
+    if (filteredProducts.isEmpty) return;
+    if (!_scrollController.hasClients) return;
+    
+    double offset = _scrollController.offset;
+    double accumulatedHeight = 0;
+    int firstVisibleIndex = 0;
+    
+    for (int i = 0; i < filteredProducts.length; i++) {
+      final showHeader = i == 0 || filteredProducts[i].category != filteredProducts[i - 1].category;
+      double itemHeight = 120.0 + (showHeader ? 40.0 : 0.0);
+      accumulatedHeight += itemHeight;
+      if (accumulatedHeight > offset + 30.0) {
+        firstVisibleIndex = i;
+        break;
+      }
+    }
+    
+    final visibleProduct = filteredProducts[firstVisibleIndex];
+    
+    String getCategoryDisplayString(String cat) {
+      final cLower = cat.toLowerCase();
+      if (cLower.contains("cracker")) return "Crackers";
+      if (cLower.contains("gift") || cLower.contains("box") || cLower.contains("combo")) return "Gifts";
+      if (cLower.contains("decor")) return "Decor";
+      if (cLower.contains("new") || cLower.contains("arrival")) return "New Arrivals";
+      return "New Arrivals"; // everything else goes into New Arrivals
+    }
+    
+    String cat = getCategoryDisplayString(visibleProduct.category);
+    if (widget.initialCategory != cat) {
+      _isScrollingFromUser = true;
+      widget.onCategoryChanged(cat);
+    }
+
+  }
+
+
+  void _scrollToCategory(String category) {
+    if (!_scrollController.hasClients) return;
+    final targetOffset = _getOffsetForCategory(category);
+    _isManualScrolling = true;
+    _scrollController.animateTo(
+      targetOffset.clamp(0.0, _scrollController.position.maxScrollExtent),
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    ).then((_) {
+      _isManualScrolling = false;
+    });
+  }
+
+  double _getOffsetForCategory(String category) {
+    if (category == "All") return 0.0;
+    final filteredProducts = _getFilteredProducts();
+    
+    String getCategoryDisplayString(String cat) {
+      final cLower = cat.toLowerCase();
+      if (cLower.contains("cracker")) return "Crackers";
+      if (cLower.contains("gift") || cLower.contains("box") || cLower.contains("combo")) return "Gifts";
+      if (cLower.contains("decor")) return "Decor";
+      if (cLower.contains("new") || cLower.contains("arrival")) return "New Arrivals";
+      return "New Arrivals"; // everything else goes into New Arrivals
+    }
+
+    double accumulatedHeight = 0.0;
+    for (int i = 0; i < filteredProducts.length; i++) {
+      final product = filteredProducts[i];
+      if (getCategoryDisplayString(product.category) == category) {
+        break;
+      }
+      final showHeader = i == 0 || filteredProducts[i].category != filteredProducts[i - 1].category;
+      double itemHeight = 120.0 + (showHeader ? 40.0 : 0.0);
+      accumulatedHeight += itemHeight;
+    }
+    return accumulatedHeight;
+  }
+
 
   void _showSortBottomSheet() {
     showModalBottomSheet(
@@ -1630,42 +1740,33 @@ class _ExploreTabState extends State<ExploreTab> {
     };
   }
 
-  @override
-  Widget build(BuildContext context) {
+  List<Product> _getFilteredProducts() {
     final allProducts = widget.productProvider.products;
-    final cart = Provider.of<CartProvider>(context);
     
+    int getCategorySeqIndex(String cat) {
+      final cLower = cat.toLowerCase();
+      if (cLower.contains("cracker")) return 0;
+      if (cLower.contains("gift") || cLower.contains("box") || cLower.contains("combo")) return 1;
+      if (cLower.contains("decor")) return 2;
+      // New Arrivals (or anything unrecognized)
+      return 3;
+    }
+
     // 1. Filter logic
-    List<Product> filteredProducts = allProducts.where((product) {
+    List<Product> filtered = allProducts.where((product) {
       final matchesSearch = product.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          product.description.toLowerCase().contains(_searchQuery.toLowerCase());
+          product.category.toLowerCase().contains(_searchQuery.toLowerCase());
       
       bool matchesCategory = false;
       if (widget.initialCategory == "All") {
         matchesCategory = true;
       } else {
-        final catLower = product.category.toLowerCase();
-        final nameLower = product.name.toLowerCase();
-        final targetLower = widget.initialCategory.toLowerCase();
-
-        if (catLower == targetLower) {
-          matchesCategory = true;
-        } else if (targetLower == "sparklers" && (catLower.contains("sparkler") || nameLower.contains("sparkler"))) {
-          matchesCategory = true;
-        } else if (targetLower == "rockets" && (catLower.contains("rocket") || nameLower.contains("rocket"))) {
-          matchesCategory = true;
-        } else if (targetLower == "bombs" && (catLower.contains("bomb") || nameLower.contains("bomb") || nameLower.contains("ladi") || nameLower.contains("shot"))) {
-          matchesCategory = true;
-        } else if (targetLower == "crackers" && catLower.contains("cracker")) {
-          matchesCategory = true;
-        } else if (targetLower.contains("decor") && catLower.contains("decor")) {
-          matchesCategory = true;
-        } else if ((targetLower.contains("gift") || targetLower.contains("box")) && (catLower.contains("gift") || catLower.contains("combo"))) {
-          matchesCategory = true;
-        } else if (targetLower.contains("sweet") && catLower.contains("sweet")) {
-          matchesCategory = true;
-        }
+        // Always show all sequenced categories (Crackers + Gifts + Decor + New Arrivals) together.
+        // The selected chip only controls scroll position, not what's visible.
+        int prodIndex = getCategorySeqIndex(product.category);
+        matchesCategory = (prodIndex <= 3); // Include all categories incl. New Arrivals
       }
+
           
       final matchesStock = !_inStockOnly || product.countInStock > 0;
       final matchesRating = product.rating >= _minRating;
@@ -1673,16 +1774,36 @@ class _ExploreTabState extends State<ExploreTab> {
       return matchesSearch && matchesCategory && matchesStock && matchesRating;
     }).toList();
 
-    // 2. Sorting logic
-    if (_sortBy == "price_low_high") {
-      filteredProducts.sort((a, b) => a.price.compareTo(b.price));
-    } else if (_sortBy == "price_high_low") {
-      filteredProducts.sort((a, b) => b.price.compareTo(a.price));
-    } else if (_sortBy == "rating") {
-      filteredProducts.sort((a, b) => b.rating.compareTo(a.rating));
-    }
+    // 2. Sorting logic (Category grouping is primary key, selected option is secondary key)
+    filtered.sort((a, b) {
+      int idxA = getCategorySeqIndex(a.category);
+      int idxB = getCategorySeqIndex(b.category);
+      
+      if (idxA != idxB) {
+        return idxA.compareTo(idxB);
+      }
+      
+      // Secondary sort
+      if (_sortBy == "price_low_high") {
+        return a.price.compareTo(b.price);
+      } else if (_sortBy == "price_high_low") {
+        return b.price.compareTo(a.price);
+      } else if (_sortBy == "rating") {
+        return b.rating.compareTo(a.rating);
+      }
+      return 0; // Maintain order
+    });
 
-    final categories = ["All", "Crackers", "Sparklers", "Rockets", "Bombs", "Gifts", "Decor", "Sweets"];
+    return filtered;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filteredProducts = _getFilteredProducts();
+    final cart = Provider.of<CartProvider>(context);
+
+
+    final categories = ["All", "Crackers", "Gifts", "Decor", "New Arrivals"];
     final isWeb = MediaQuery.of(context).size.width > 800;
 
     return SafeArea(
@@ -1871,6 +1992,7 @@ class _ExploreTabState extends State<ExploreTab> {
                       elevation: 0,
                       onSelected: (val) {
                         widget.onCategoryChanged(cat);
+                        _scrollToCategory(cat);
                       },
                     ),
                   );
@@ -1898,15 +2020,43 @@ class _ExploreTabState extends State<ExploreTab> {
                           ),
                         )
                       : ListView.builder(
+                          controller: _scrollController,
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           itemCount: filteredProducts.length,
+
                           itemBuilder: (context, index) {
                             final product = filteredProducts[index];
                             final pricing = _getPricing(product);
                             final double originalPrice = pricing["originalPrice"];
 
-                            return GestureDetector(
-                              onTap: () {
+                            final showHeader = index == 0 || filteredProducts[index].category != filteredProducts[index - 1].category;
+
+                            String getCategoryHeader(String cat) {
+                              final cLower = cat.toLowerCase();
+                              if (cLower.contains("cracker")) return "Crackers";
+                              if (cLower.contains("gift") || cLower.contains("box") || cLower.contains("combo")) return "Gift Boxes";
+                              if (cLower.contains("decor")) return "Decorations";
+                              return cat;
+                            }
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (showHeader)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 16, bottom: 8, left: 4),
+                                    child: Text(
+                                      getCategoryHeader(product.category).toUpperCase(),
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w800,
+                                        color: const Color(0xFFFF8C00),
+                                        letterSpacing: 1.2,
+                                      ),
+                                    ),
+                                  ),
+                                GestureDetector(
+                                  onTap: () {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
@@ -2122,9 +2272,11 @@ class _ExploreTabState extends State<ExploreTab> {
                                   ],
                                 ),
                               ),
-                            );
-                          },
-                        ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
             ),
           ],
         ),
