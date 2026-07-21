@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../models/product.dart';
 import '../../providers/cart_provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../widgets/guest_auth_prompt.dart';
 import '../cart/cart_screen.dart';
 
 class ProductDetailScreen extends StatefulWidget {
@@ -287,6 +289,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                         "Added $_quantity x ${product.name} to cart",
                                         style: GoogleFonts.outfit(),
                                       ),
+                                      behavior: SnackBarBehavior.floating,
+                                      width: MediaQuery.of(context).size.width > 800 ? 400.0 : null,
                                     ),
                                   );
                                 }
@@ -320,6 +324,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ),
                     onPressed: product.countInStock > 0
                         ? () {
+                            final auth = Provider.of<AuthProvider>(context, listen: false);
+                            if (auth.isGuest) {
+                              showGuestAuthPrompt(context, "Please log in or register to buy products directly.");
+                              return;
+                            }
                             for (int i = 0; i < _quantity; i++) {
                               cart.addItem(product);
                             }

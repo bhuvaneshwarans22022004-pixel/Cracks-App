@@ -5,6 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/address_provider.dart';
 import '../cart/address_screen.dart';
 import 'edit_profile_screen.dart';
+import '../../widgets/guest_auth_prompt.dart';
 
 class ProfileScreen extends StatelessWidget {
   final VoidCallback? onBackPressed;
@@ -259,6 +260,10 @@ class ProfileScreen extends StatelessWidget {
             _profileItem(Icons.phone_outlined, "Phone Number", user?.phone ?? "Not set"),
             GestureDetector(
               onTap: () {
+                if (auth.isGuest) {
+                  showGuestAuthPrompt(context, "Please log in or register to configure shipping addresses.");
+                  return;
+                }
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -278,6 +283,10 @@ class ProfileScreen extends StatelessWidget {
             // Edit Profile Button
             ElevatedButton(
               onPressed: () {
+                if (auth.isGuest) {
+                  showGuestAuthPrompt(context, "Please log in or register to edit profile details.");
+                  return;
+                }
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const EditProfileScreen()),

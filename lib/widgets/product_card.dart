@@ -103,6 +103,7 @@ class ProductCard extends StatelessWidget {
                                 backgroundColor: wasInWish ? Colors.grey[800] : const Color(0xFFFF8C00),
                                 duration: const Duration(seconds: 2),
                                 behavior: SnackBarBehavior.floating,
+                                width: MediaQuery.of(context).size.width > 800 ? 400.0 : null,
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                               ),
                             );
@@ -234,6 +235,7 @@ class ProductCard extends StatelessWidget {
                                     backgroundColor: const Color(0xFFFF8C00),
                                     duration: const Duration(seconds: 2),
                                     behavior: SnackBarBehavior.floating,
+                                    width: MediaQuery.of(context).size.width > 800 ? 400.0 : null,
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                   ),
                                 );

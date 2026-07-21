@@ -8,6 +8,7 @@ import '../../providers/cart_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
+import '../../widgets/guest_auth_prompt.dart';
 import 'payment_screen.dart';
 
 class AddressScreen extends StatefulWidget {
@@ -684,6 +685,10 @@ class _AddressScreenState extends State<AddressScreen> {
                                         constraints: const BoxConstraints(),
                                         padding: EdgeInsets.zero,
                                         onPressed: () {
+                                          if (auth.isGuest) {
+                                            showGuestAuthPrompt(context, "Please log in or register to edit addresses.");
+                                            return;
+                                          }
                                           _showAddAddressSheet(addressProvider, existingAddress: addr);
                                         },
                                       ),
@@ -709,7 +714,13 @@ class _AddressScreenState extends State<AddressScreen> {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
-                              onPressed: () => _showAddAddressSheet(addressProvider),
+                               onPressed: () {
+                                if (auth.isGuest) {
+                                  showGuestAuthPrompt(context, "Please log in or register to add a new address.");
+                                  return;
+                                }
+                                _showAddAddressSheet(addressProvider);
+                              },
                               child: Text(
                                 "Add New Address",
                                 style: GoogleFonts.outfit(
