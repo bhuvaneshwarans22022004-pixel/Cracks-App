@@ -485,121 +485,88 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: const Color(0xFFFAF8F5),
       drawer: _buildDrawer(),
       body: pages[_selectedIndex],
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: cart.itemCount > 0
-          ? Align(
-              alignment: Alignment.bottomCenter,
-              child: Container(
-                constraints: BoxConstraints(maxWidth: isWeb ? 1000 : double.infinity),
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: GestureDetector(
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: (cart.itemCount > 0 && (_selectedIndex == 0 || _selectedIndex == 1))
+          ? Padding(
+              padding: const EdgeInsets.only(bottom: 8, right: 4),
+              child: GestureDetector(
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const CartScreen()),
+                    PageRouteBuilder(
+                      pageBuilder: (context, animation, secondaryAnimation) => const CartScreen(),
+                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                        const begin = Offset(0.0, 1.0);
+                        const end = Offset.zero;
+                        const curve = Curves.easeOutCubic;
+                        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                        return SlideTransition(position: animation.drive(tween), child: child);
+                      },
+                    ),
                   );
                 },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeOut,
-                  height: 58,
+                child: Container(
+                  width: 60,
+                  height: 60,
                   decoration: BoxDecoration(
+                    shape: BoxShape.circle,
                     gradient: const LinearGradient(
                       colors: [Color(0xFFFF6B00), Color(0xFFFF9F1C)],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFFF8C00).withOpacity(0.45),
+                        color: const Color(0xFFFF6B00).withOpacity(0.5),
                         blurRadius: 18,
-                        offset: const Offset(0, 6),
+                        offset: const Offset(0, 8),
+                        spreadRadius: 2,
                       ),
                     ],
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 18),
-                    child: Row(
-                      children: [
-                        // Cart icon with count badge
-                        Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            Container(
-                              width: 38,
-                              height: 38,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: const Icon(Icons.shopping_cart_rounded, color: Colors.white, size: 20),
-                            ),
-                            Positioned(
-                              top: -6,
-                              right: -6,
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: const BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Text(
-                                  '${cart.itemCount}',
-                                  style: GoogleFonts.outfit(
-                                    color: Color(0xFFFF6B00),
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(width: 12),
-                        // Text
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                '${cart.itemCount} ${cart.itemCount == 1 ? 'item' : 'items'}',
-                                style: GoogleFonts.outfit(
-                                  color: Colors.white.withOpacity(0.85),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              Text(
-                                'View Cart',
-                                style: GoogleFonts.outfit(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.2,
-                                ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    clipBehavior: Clip.none,
+                    children: [
+                      const Icon(
+                        Icons.shopping_bag_rounded,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                      Positioned(
+                        top: -2,
+                        right: -2,
+                        child: Container(
+                          padding: const EdgeInsets.all(5),
+                          constraints: const BoxConstraints(minWidth: 22, minHeight: 22),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.2),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
                               ),
                             ],
                           ),
-                        ),
-                        // Arrow
-                        Container(
-                          width: 34,
-                          height: 34,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.22),
-                            borderRadius: BorderRadius.circular(10),
+                          child: Center(
+                            child: Text(
+                              '${cart.itemCount}',
+                              style: GoogleFonts.outfit(
+                                color: const Color(0xFFFF6B00),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
                           ),
-                          child: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 16),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ),
-          )
+            )
           : null,
       bottomNavigationBar: isWeb
           ? Container(
@@ -1846,9 +1813,21 @@ class _ExploreTabState extends State<ExploreTab> {
   }
 
   Map<String, dynamic> _getPricing(Product product) {
+    if (product.price <= 0) {
+      return {
+        "originalPrice": 0.0,
+        "discountPercent": 0,
+      };
+    }
     final int hash = product.name.codeUnits.fold(0, (prev, element) => prev + element);
     final double discountFactor = 1.35 + (hash % 4) * 0.08; // 1.35, 1.43, 1.51, 1.59
     final double originalPrice = (product.price * discountFactor).roundToDouble();
+    if (originalPrice <= 0) {
+      return {
+        "originalPrice": product.price,
+        "discountPercent": 0,
+      };
+    }
     final int discountPercent = (((originalPrice - product.price) / originalPrice) * 100).round();
     return {
       "originalPrice": originalPrice,

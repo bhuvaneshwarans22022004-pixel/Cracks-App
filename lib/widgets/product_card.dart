@@ -190,7 +190,7 @@ class ProductCard extends StatelessWidget {
                                   color: isOutOfStock ? Colors.grey : Colors.black,
                                 ),
                               ),
-                              if (product.originalPrice > product.price) ...[
+                              if (product.originalPrice > product.price && product.originalPrice > 0 && product.price > 0) ...[
                                 const SizedBox(width: 4),
                                 Text(
                                   "₹${product.originalPrice.toStringAsFixed(0)}",
@@ -203,7 +203,7 @@ class ProductCard extends StatelessWidget {
                               ],
                             ],
                           ),
-                          if (product.originalPrice > product.price) ...[
+                          if (product.originalPrice > product.price && product.originalPrice > 0 && product.price > 0) ...[
                             const SizedBox(height: 2),
                             Text(
                               "${((product.originalPrice - product.price) / product.originalPrice * 100).round()}% OFF",
