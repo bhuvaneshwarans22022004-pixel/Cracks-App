@@ -21,13 +21,21 @@ class InvoiceScreen extends StatelessWidget {
     final formattedDate = DateFormat('dd MMM yyyy, hh:mm a').format(order.createdAt);
     
     // Inferred calculations
-    double itemsTotal = 0;
+    double itemsMrpTotal = 0;
+    double itemsSellingTotal = 0;
+
     for (var item in order.items) {
-      itemsTotal += item.price * item.quantity;
+      final origPrice = item.originalPrice > 0 ? item.originalPrice : item.price;
+      itemsMrpTotal += origPrice * item.quantity;
+      itemsSellingTotal += item.price * item.quantity;
     }
-    final shippingPrice = order.totalAmount > 1000 || order.totalAmount == 0 ? 0.0 : 40.0;
-    // Calculate discount if MRP + Shipping != Total
-    final double discount = (itemsTotal + shippingPrice - order.totalAmount).clamp(0.0, double.infinity);
+
+    final double savingAmount = (itemsMrpTotal - itemsSellingTotal).clamp(0.0, double.infinity);
+    // Calculate 3% Shipping Charge
+    final double shippingPrice = order.shippingPrice > 0 
+        ? order.shippingPrice 
+        : itemsSellingTotal * 0.03;
+    final double grandTotal = itemsSellingTotal + shippingPrice;
 
     return Scaffold(
       backgroundColor: const Color(0xFFFAF8F5), // Soft cream background
@@ -203,239 +211,217 @@ class InvoiceScreen extends StatelessWidget {
                         const Divider(height: 1, thickness: 1),
                         const SizedBox(height: 24),
 
-                        // Inferred calculations
-                        double itemsMrpTotal = 0;
-                        double itemsSellingTotal = 0;
-
-                        for (var item in order.items) {
-                          final origPrice = item.originalPrice > 0 ? item.originalPrice : item.price;
-                          itemsMrpTotal += origPrice * item.quantity;
-                          itemsSellingTotal += item.price * item.quantity;
-                        }
-
-                        final double savingAmount = (itemsMrpTotal - itemsSellingTotal).clamp(0.0, double.infinity);
-                        // Calculate 3% Shipping Charge
-                        final double shippingPrice = order.shippingPrice > 0 
-                            ? order.shippingPrice 
-                            : itemsSellingTotal * 0.03;
-                        final double grandTotal = itemsSellingTotal + shippingPrice;
-
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        // Items Table Header matching User Mockup
+                        Row(
                           children: [
-                            // Items Table Header matching User Mockup
-                            Row(
-                              children: [
-                                Expanded(
-                                  flex: 3,
-                                  child: Text(
-                                    "ITEM DESCRIPTION",
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
+                            Expanded(
+                              flex: 3,
+                              child: Text(
+                                "ITEM DESCRIPTION",
+                                style: GoogleFonts.outfit(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey[600],
                                 ),
-                                Expanded(
-                                  flex: 2,
-                                  child: Text(
-                                    "Original price",
-                                    textAlign: TextAlign.right,
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  flex: 1,
-                                  child: Text(
-                                    "Discount",
-                                    textAlign: TextAlign.center,
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  flex: 1,
-                                  child: Text(
-                                    "Price",
-                                    textAlign: TextAlign.right,
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  flex: 1,
-                                  child: Text(
-                                    "Qty",
-                                    textAlign: TextAlign.center,
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  flex: 1,
-                                  child: Text(
-                                    "TOTAL",
-                                    textAlign: TextAlign.right,
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
-                            const SizedBox(height: 12),
-                            
-                            // Items List
-                            ListView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: order.items.length,
-                              itemBuilder: (context, index) {
-                                final item = order.items[index];
-                                final origPrice = item.originalPrice > 0 ? item.originalPrice : item.price;
-                                final discountPercent = origPrice > item.price 
-                                    ? (((origPrice - item.price) / origPrice) * 100).round() 
-                                    : 0;
-
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 8),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        flex: 3,
-                                        child: Text(
-                                          item.name,
-                                          style: GoogleFonts.outfit(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.black87,
-                                          ),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        flex: 2,
-                                        child: Text(
-                                          "₹${(origPrice * item.quantity).toStringAsFixed(0)}",
-                                          textAlign: TextAlign.right,
-                                          style: GoogleFonts.outfit(
-                                            fontSize: 12,
-                                            color: Colors.grey[600],
-                                            decoration: origPrice > item.price ? TextDecoration.lineThrough : null,
-                                          ),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        flex: 1,
-                                        child: Text(
-                                          discountPercent > 0 ? "$discountPercent%" : "-",
-                                          textAlign: TextAlign.center,
-                                          style: GoogleFonts.outfit(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold,
-                                            color: discountPercent > 0 ? Colors.green[700] : Colors.grey[500],
-                                          ),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        flex: 1,
-                                        child: Text(
-                                          "₹${item.price.toStringAsFixed(0)}",
-                                          textAlign: TextAlign.right,
-                                          style: GoogleFonts.outfit(
-                                            fontSize: 12,
-                                            color: Colors.black87,
-                                          ),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        flex: 1,
-                                        child: Text(
-                                          "x ${item.quantity}",
-                                          textAlign: TextAlign.center,
-                                          style: GoogleFonts.outfit(
-                                            fontSize: 12,
-                                            color: Colors.black87,
-                                          ),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        flex: 1,
-                                        child: Text(
-                                          "₹${(item.price * item.quantity).toStringAsFixed(0)}",
-                                          textAlign: TextAlign.right,
-                                          style: GoogleFonts.outfit(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.black87,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            ),
-
-                            const SizedBox(height: 24),
-                            const Divider(height: 1, thickness: 1),
-                            const SizedBox(height: 24),
-
-                            // Totals Summary Section matching User Image Annotations
-                            _pricingRow("Subtotal (MRP)", itemsMrpTotal),
-                            if (savingAmount > 0) ...[
-                              const SizedBox(height: 10),
-                              _pricingRow("Saving amount", savingAmount, isDiscount: true),
-                            ],
-                            const SizedBox(height: 10),
-                            _pricingRow("Items Subtotal", itemsSellingTotal),
-                            const SizedBox(height: 10),
-                            _pricingRow(
-                              "Shipping Charge (3%)", 
-                              shippingPrice,
-                            ),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 16),
-                              child: Divider(height: 1, thickness: 1),
-                            ),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  "GRAND TOTAL",
-                                  style: GoogleFonts.outfit(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
-                                  ),
+                            Expanded(
+                              flex: 2,
+                              child: Text(
+                                "Original price",
+                                textAlign: TextAlign.right,
+                                style: GoogleFonts.outfit(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey[600],
                                 ),
-                                Text(
-                                  "₹${grandTotal.toStringAsFixed(2)}",
-                                  style: GoogleFonts.outfit(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: const Color(0xFFFF8C00),
-                                  ),
+                              ),
+                            ),
+                            Expanded(
+                              flex: 1,
+                              child: Text(
+                                "Discount",
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.outfit(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey[600],
                                 ),
-                              ],
+                              ),
+                            ),
+                            Expanded(
+                              flex: 1,
+                              child: Text(
+                                "Price",
+                                textAlign: TextAlign.right,
+                                style: GoogleFonts.outfit(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              flex: 1,
+                              child: Text(
+                                "Qty",
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.outfit(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              flex: 1,
+                              child: Text(
+                                "TOTAL",
+                                textAlign: TextAlign.right,
+                                style: GoogleFonts.outfit(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
                             ),
                           ],
-                        );
+                        ),
+                        const SizedBox(height: 12),
+                        
+                        // Items List
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: order.items.length,
+                          itemBuilder: (context, index) {
+                            final item = order.items[index];
+                            final origPrice = item.originalPrice > 0 ? item.originalPrice : item.price;
+                            final discountPercent = origPrice > item.price 
+                                ? (((origPrice - item.price) / origPrice) * 100).round() 
+                                : 0;
+
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    flex: 3,
+                                    child: Text(
+                                      item.name,
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    flex: 2,
+                                    child: Text(
+                                      "₹${(origPrice * item.quantity).toStringAsFixed(0)}",
+                                      textAlign: TextAlign.right,
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 12,
+                                        color: Colors.grey[600],
+                                        decoration: origPrice > item.price ? TextDecoration.lineThrough : null,
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    flex: 1,
+                                    child: Text(
+                                      discountPercent > 0 ? "$discountPercent%" : "-",
+                                      textAlign: TextAlign.center,
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        color: discountPercent > 0 ? Colors.green[700] : Colors.grey[500],
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    flex: 1,
+                                    child: Text(
+                                      "₹${item.price.toStringAsFixed(0)}",
+                                      textAlign: TextAlign.right,
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 12,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    flex: 1,
+                                    child: Text(
+                                      "x ${item.quantity}",
+                                      textAlign: TextAlign.center,
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 12,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    flex: 1,
+                                    child: Text(
+                                      "₹${(item.price * item.quantity).toStringAsFixed(0)}",
+                                      textAlign: TextAlign.right,
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+
+                        const SizedBox(height: 24),
+                        const Divider(height: 1, thickness: 1),
+                        const SizedBox(height: 24),
+
+                        // Totals Summary Section matching User Image Annotations
+                        _pricingRow("Subtotal (MRP)", itemsMrpTotal),
+                        if (savingAmount > 0) ...[
+                          const SizedBox(height: 10),
+                          _pricingRow("Saving amount", savingAmount, isDiscount: true),
+                        ],
+                        const SizedBox(height: 10),
+                        _pricingRow("Items Subtotal", itemsSellingTotal),
+                        const SizedBox(height: 10),
+                        _pricingRow(
+                          "Shipping Charge (3%)", 
+                          shippingPrice,
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          child: Divider(height: 1, thickness: 1),
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "GRAND TOTAL",
+                              style: GoogleFonts.outfit(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            Text(
+                              "₹${grandTotal.toStringAsFixed(2)}",
+                              style: GoogleFonts.outfit(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFFFF8C00),
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
