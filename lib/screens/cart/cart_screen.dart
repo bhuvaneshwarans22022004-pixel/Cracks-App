@@ -21,13 +21,11 @@ class CartScreen extends StatelessWidget {
     final selectedAddress = addressProvider.selectedAddress;
     final isWeb = MediaQuery.of(context).size.width > 800;
 
-    // Calculations matching mockup rules
+    // Calculations matching 3% Shipping Charge rule
     final double totalMrp = cart.totalAmount;
-    final double deliveryCharge = totalMrp > 1000 || totalMrp == 0 ? 0.0 : 30.0;
-    final double handlingCharge = totalMrp == 0 ? 0.0 : 8.0;
-    final double surgeCharge = (totalMrp >= 499 || totalMrp == 0) ? 0.0 : 30.0;
+    final double deliveryCharge = totalMrp > 0 ? (totalMrp * 0.03) : 0.0; // 3% Shipping Charge
     final double discount = 0.0; // Coupon discount if applicable
-    final double toPay = totalMrp + deliveryCharge + handlingCharge + surgeCharge - discount;
+    final double toPay = totalMrp + deliveryCharge - discount;
 
     final totalQty = cart.items.values.fold(0, (sum, item) => sum + item.quantity);
 
@@ -445,7 +443,7 @@ class CartScreen extends StatelessWidget {
                                               Text("Items total", style: GoogleFonts.outfit(color: Colors.grey[600], fontSize: 13)),
                                             ],
                                           ),
-                                          Text("₹${totalMrp.toStringAsFixed(0)}", style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 13)),
+                                          Text("₹${totalMrp.toStringAsFixed(2)}", style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 13)),
                                         ],
                                       ),
                                       const SizedBox(height: 12),
@@ -454,59 +452,21 @@ class CartScreen extends StatelessWidget {
                                         children: [
                                           Row(
                                             children: [
-                                              Icon(Icons.directions_bike_rounded, size: 14, color: Colors.grey[500]),
+                                              Icon(Icons.local_shipping_outlined, size: 14, color: Colors.grey[500]),
                                               const SizedBox(width: 6),
-                                              Text("Delivery charge", style: GoogleFonts.outfit(color: Colors.grey[600], fontSize: 13)),
+                                              Text("Shipping Charge (3%)", style: GoogleFonts.outfit(color: Colors.grey[600], fontSize: 13)),
                                             ],
                                           ),
                                           Text(
-                                            deliveryCharge > 0 ? "₹${deliveryCharge.toStringAsFixed(0)}" : "FREE",
+                                            "₹${deliveryCharge.toStringAsFixed(2)}",
                                             style: GoogleFonts.outfit(
                                               fontWeight: FontWeight.bold,
-                                              color: deliveryCharge > 0 ? Colors.black87 : const Color(0xFF2E7D32),
+                                              color: Colors.black87,
                                               fontSize: 13,
                                             ),
                                           ),
                                         ],
                                       ),
-                                      const SizedBox(height: 12),
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Icon(Icons.room_service_outlined, size: 14, color: Colors.grey[500]),
-                                              const SizedBox(width: 6),
-                                              Text("Handling charge", style: GoogleFonts.outfit(color: Colors.grey[600], fontSize: 13)),
-                                            ],
-                                          ),
-                                          Text("₹${handlingCharge.toStringAsFixed(0)}", style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 13)),
-                                        ],
-                                      ),
-                                      if (surgeCharge > 0) ...[
-                                        const SizedBox(height: 12),
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                Icon(Icons.trending_up_rounded, size: 14, color: Colors.grey[500]),
-                                                const SizedBox(width: 6),
-                                                Text("High demand surge charge", style: GoogleFonts.outfit(color: Colors.grey[600], fontSize: 13)),
-                                              ],
-                                            ),
-                                            Text("₹${surgeCharge.toStringAsFixed(0)}", style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 13)),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Padding(
-                                          padding: const EdgeInsets.only(left: 20),
-                                          child: Text(
-                                            "No surge charge on shopping products worth ₹499 or more",
-                                            style: GoogleFonts.outfit(color: const Color(0xFFFF5722), fontSize: 10, fontWeight: FontWeight.w500),
-                                          ),
-                                        ),
-                                      ],
                                       const Padding(
                                         padding: EdgeInsets.symmetric(vertical: 14),
                                         child: Divider(height: 1, thickness: 1),
