@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../models/product.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/address_provider.dart';
 import '../../providers/auth_provider.dart';
@@ -8,10 +9,28 @@ import '../../widgets/guest_auth_prompt.dart';
 import 'address_screen.dart';
 import 'payment_screen.dart';
 
-class CartScreen extends StatelessWidget {
-  const CartScreen({super.key});
+class CartScreen extends StatefulWidget {
+  final Product? buyNowProduct;
+  final int buyNowQuantity;
 
+  const CartScreen({
+    super.key,
+    this.buyNowProduct,
+    this.buyNowQuantity = 1,
+  });
 
+  @override
+  State<CartScreen> createState() => _CartScreenState();
+}
+
+class _CartScreenState extends State<CartScreen> {
+  late int _buyNowQty;
+
+  @override
+  void initState() {
+    super.initState();
+    _buyNowQty = widget.buyNowQuantity;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,16 +40,24 @@ class CartScreen extends StatelessWidget {
     final selectedAddress = addressProvider.selectedAddress;
     final isWeb = MediaQuery.of(context).size.width > 800;
 
+    final bool isBuyNow = widget.buyNowProduct != null;
+
     // Calculations matching 3% Shipping Charge rule
-    final double totalMrp = cart.totalAmount;
-    final double deliveryCharge = totalMrp > 0 ? (totalMrp * 0.03) : 0.0; // 3% Shipping Charge
-    final double discount = 0.0; // Coupon discount if applicable
+    final double totalMrp = isBuyNow
+        ? (widget.buyNowProduct!.price * _buyNowQty)
+        : cart.totalAmount;
+    final double deliveryCharge = totalMrp > 0 ? (totalMrp * 0.03) : 0.0;
+    final double discount = 0.0;
     final double toPay = totalMrp + deliveryCharge - discount;
 
-    final totalQty = cart.items.values.fold(0, (sum, item) => sum + item.quantity);
+    final totalQty = isBuyNow
+        ? _buyNowQty
+        : cart.items.values.fold(0, (sum, item) => sum + item.quantity);
+
+    final bool isCartEmpty = isBuyNow ? _buyNowQty <= 0 : cart.items.isEmpty;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF8F5), // Theme background color
+      backgroundColor: const Color(0xFFFAF8F5),
       appBar: AppBar(
         backgroundColor: const Color(0xFFFF8C00),
         elevation: 0,
@@ -39,7 +66,7 @@ class CartScreen extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          "Cart",
+          isBuyNow ? "Direct Checkout" : "Cart",
           style: GoogleFonts.outfit(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -73,7 +100,7 @@ class CartScreen extends StatelessWidget {
                         )
                       ] : null,
                     ),
-                    child: cart.items.isEmpty
+                    child: isCartEmpty
                         ? Center(
                             child: Padding(
                               padding: const EdgeInsets.all(40),
@@ -83,7 +110,7 @@ class CartScreen extends StatelessWidget {
                                   Icon(Icons.shopping_cart_outlined, size: 80, color: Colors.grey[300]),
                                   const SizedBox(height: 20),
                                   Text(
-                                    "Your cart is empty",
+                                    isBuyNow ? "No item selected" : "Your cart is empty",
                                     style: GoogleFonts.outfit(fontSize: 18, color: Colors.grey[600], fontWeight: FontWeight.w500),
                                   ),
                                   const SizedBox(height: 20),
@@ -107,7 +134,7 @@ class CartScreen extends StatelessWidget {
                               Padding(
                                 padding: const EdgeInsets.only(left: 20, right: 20, top: 20, bottom: 10),
                                 child: Text(
-                                  "$totalQty Items in Cart",
+                                  isBuyNow ? "Buy Now Item" : "$totalQty Items in Cart",
                                   style: GoogleFonts.outfit(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
@@ -117,247 +144,171 @@ class CartScreen extends StatelessWidget {
                               ),
 
                               // Cart items list
-                              ListView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                padding: const EdgeInsets.symmetric(horizontal: 20),
-                                itemCount: cart.items.length,
-                                itemBuilder: (context, index) {
-                                  final item = cart.items.values.toList()[index];
-                                  final packLabel = item.product.packSize > 1
-                                      ? "(Pack of ${item.product.packSize})"
-                                      : "(Pack of 1)";
-                                  final nameWithSuffix = "${item.product.name} $packLabel";
+                              if (isBuyNow)
+                                _buildBuyNowItemCard(widget.buyNowProduct!)
+                              else
+                                ListView.builder(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                                  itemCount: cart.items.length,
+                                  itemBuilder: (context, index) {
+                                    final item = cart.items.values.toList()[index];
+                                    final packLabel = item.product.packSize > 1
+                                        ? "(Pack of ${item.product.packSize})"
+                                        : "(Pack of 1)";
+                                    final nameWithSuffix = "${item.product.name} $packLabel";
 
-                                   return Container(
-                                    margin: const EdgeInsets.only(bottom: 16),
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(16),
-                                      border: Border.all(color: Colors.grey[100]!),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.01),
-                                          blurRadius: 10,
-                                          offset: const Offset(0, 4),
-                                        )
-                                      ],
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            // Product Image Container
-                                            Container(
-                                              width: 76,
-                                              height: 76,
-                                              padding: const EdgeInsets.all(8),
-                                              decoration: BoxDecoration(
-                                                color: Colors.grey[50],
-                                                borderRadius: BorderRadius.circular(12),
-                                                border: Border.all(color: Colors.grey[100]!),
-                                              ),
-                                              child: Image.network(
-                                                item.product.image,
-                                                fit: BoxFit.contain,
-                                                errorBuilder: (_, __, ___) => const Icon(
-                                                  Icons.celebration,
-                                                  color: Color(0xFFFF8C00),
-                                                  size: 32,
+                                    return Container(
+                                      margin: const EdgeInsets.only(bottom: 16),
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(color: Colors.grey[100]!),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(0.01),
+                                            blurRadius: 10,
+                                            offset: const Offset(0, 4),
+                                          )
+                                        ],
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              // Product Image Container
+                                              Container(
+                                                width: 76,
+                                                height: 76,
+                                                padding: const EdgeInsets.all(8),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.grey[50],
+                                                  borderRadius: BorderRadius.circular(12),
+                                                  border: Border.all(color: Colors.grey[100]!),
+                                                ),
+                                                child: Image.network(
+                                                  item.product.image,
+                                                  fit: BoxFit.contain,
+                                                  errorBuilder: (_, __, ___) => const Icon(
+                                                    Icons.celebration,
+                                                    color: Color(0xFFFF8C00),
+                                                    size: 32,
+                                                  ),
                                                 ),
                                               ),
-                                            ),
-                                            const SizedBox(width: 16),
-                                            // Product Name & Price
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    nameWithSuffix,
-                                                    style: GoogleFonts.outfit(
-                                                      fontWeight: FontWeight.w600,
-                                                      fontSize: 14,
-                                                      color: Colors.black87,
-                                                    ),
-                                                    maxLines: 2,
-                                                    overflow: TextOverflow.ellipsis,
-                                                  ),
-                                                  const SizedBox(height: 8),
-                                                  Text(
-                                                    "₹${item.product.price.toStringAsFixed(0)}",
-                                                    style: GoogleFonts.outfit(
-                                                      fontWeight: FontWeight.bold,
-                                                      fontSize: 15,
-                                                      color: Colors.black87,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            // Premium custom quantity selector
-                                            Container(
-                                              height: 36,
-                                              decoration: BoxDecoration(
-                                                border: Border.all(color: Colors.grey[200]!),
-                                                borderRadius: BorderRadius.circular(10),
-                                                color: Colors.white,
-                                              ),
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  GestureDetector(
-                                                    onTap: () => cart.decrementItem(item.product.id),
-                                                    behavior: HitTestBehavior.opaque,
-                                                    child: const Padding(
-                                                      padding: EdgeInsets.symmetric(horizontal: 10),
-                                                      child: Icon(Icons.remove, size: 14, color: Colors.black54),
-                                                    ),
-                                                  ),
-                                                  Container(
-                                                    width: 1,
-                                                    height: 20,
-                                                    color: Colors.grey[200],
-                                                  ),
-                                                  Padding(
-                                                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                                                    child: Text(
-                                                      '${item.quantity}',
-                                                      style: GoogleFonts.outfit(
-                                                        fontWeight: FontWeight.bold,
-                                                        fontSize: 13,
-                                                        color: Colors.black87,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  Container(
-                                                    width: 1,
-                                                    height: 20,
-                                                    color: Colors.grey[200],
-                                                  ),
-                                                  GestureDetector(
-                                                    onTap: () => cart.addItem(item.product),
-                                                    behavior: HitTestBehavior.opaque,
-                                                    child: const Padding(
-                                                      padding: EdgeInsets.symmetric(horizontal: 10),
-                                                      child: Icon(Icons.add, size: 14, color: Colors.black54),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        // Divider + Remove button
-                                        const SizedBox(height: 10),
-                                        Divider(height: 1, color: Colors.grey[100]),
-                                        const SizedBox(height: 6),
-                                        GestureDetector(
-                                          onTap: () {
-                                            showModalBottomSheet(
-                                              context: context,
-                                              shape: const RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                                              ),
-                                              builder: (ctx) => Padding(
-                                                padding: const EdgeInsets.fromLTRB(24, 20, 24, 30),
+                                              const SizedBox(width: 16),
+                                              // Product Name & Price
+                                              Expanded(
                                                 child: Column(
-                                                  mainAxisSize: MainAxisSize.min,
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
                                                   children: [
-                                                    Container(
-                                                      width: 40,
-                                                      height: 4,
-                                                      decoration: BoxDecoration(
-                                                        color: Colors.grey[300],
-                                                        borderRadius: BorderRadius.circular(2),
-                                                      ),
-                                                    ),
-                                                    const SizedBox(height: 20),
-                                                    const Icon(Icons.delete_outline, size: 44, color: Color(0xFFFF5722)),
-                                                    const SizedBox(height: 12),
                                                     Text(
-                                                      "Remove item?",
+                                                      nameWithSuffix,
                                                       style: GoogleFonts.outfit(
-                                                        fontSize: 18,
-                                                        fontWeight: FontWeight.bold,
+                                                        fontWeight: FontWeight.w600,
+                                                        fontSize: 14,
                                                         color: Colors.black87,
                                                       ),
+                                                      maxLines: 2,
+                                                      overflow: TextOverflow.ellipsis,
                                                     ),
-                                                    const SizedBox(height: 6),
+                                                    const SizedBox(height: 8),
                                                     Text(
-                                                      "Are you sure you want to remove this item from your cart?",
-                                                      textAlign: TextAlign.center,
+                                                      "₹${item.product.price.toStringAsFixed(0)}",
                                                       style: GoogleFonts.outfit(
-                                                        fontSize: 13,
-                                                        color: Colors.grey[600],
+                                                        fontWeight: FontWeight.bold,
+                                                        fontSize: 15,
+                                                        color: Colors.black87,
                                                       ),
-                                                    ),
-                                                    const SizedBox(height: 24),
-                                                    Row(
-                                                      children: [
-                                                        Expanded(
-                                                          child: OutlinedButton(
-                                                            style: OutlinedButton.styleFrom(
-                                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                                              side: BorderSide(color: Colors.grey[300]!),
-                                                              padding: const EdgeInsets.symmetric(vertical: 14),
-                                                            ),
-                                                            onPressed: () => Navigator.pop(ctx),
-                                                            child: Text(
-                                                              "Cancel",
-                                                              style: GoogleFonts.outfit(fontWeight: FontWeight.w600, color: Colors.black87),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                        const SizedBox(width: 12),
-                                                        Expanded(
-                                                          child: ElevatedButton(
-                                                            style: ElevatedButton.styleFrom(
-                                                              backgroundColor: const Color(0xFFFF5722),
-                                                              elevation: 0,
-                                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                                              padding: const EdgeInsets.symmetric(vertical: 14),
-                                                            ),
-                                                            onPressed: () {
-                                                              Navigator.pop(ctx);
-                                                              cart.removeItem(item.product.id);
-                                                            },
-                                                            child: Text(
-                                                              "Remove",
-                                                              style: GoogleFonts.outfit(fontWeight: FontWeight.w600, color: Colors.white),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ],
                                                     ),
                                                   ],
                                                 ),
                                               ),
-                                            );
-                                          },
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Icon(Icons.delete_outline, size: 16, color: Colors.red[400]),
-                                              const SizedBox(width: 4),
-                                              Text(
-                                                "Remove",
-                                                style: GoogleFonts.outfit(
-                                                  fontSize: 13,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: Colors.red[400],
+                                              // Premium custom quantity selector
+                                              Container(
+                                                height: 36,
+                                                decoration: BoxDecoration(
+                                                  border: Border.all(color: Colors.grey[200]!),
+                                                  borderRadius: BorderRadius.circular(10),
+                                                  color: Colors.white,
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    GestureDetector(
+                                                      onTap: () => cart.decrementItem(item.product.id),
+                                                      behavior: HitTestBehavior.opaque,
+                                                      child: const Padding(
+                                                        padding: EdgeInsets.symmetric(horizontal: 10),
+                                                        child: Icon(Icons.remove, size: 14, color: Colors.black54),
+                                                      ),
+                                                    ),
+                                                    Container(
+                                                      width: 1,
+                                                      height: 20,
+                                                      color: Colors.grey[200],
+                                                    ),
+                                                    Padding(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                                                      child: Text(
+                                                        '${item.quantity}',
+                                                        style: GoogleFonts.outfit(
+                                                          fontWeight: FontWeight.bold,
+                                                          fontSize: 13,
+                                                          color: Colors.black87,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    Container(
+                                                      width: 1,
+                                                      height: 20,
+                                                      color: Colors.grey[200],
+                                                    ),
+                                                    GestureDetector(
+                                                      onTap: () => cart.addItem(item.product),
+                                                      behavior: HitTestBehavior.opaque,
+                                                      child: const Padding(
+                                                        padding: EdgeInsets.symmetric(horizontal: 10),
+                                                        child: Icon(Icons.add, size: 14, color: Colors.black54),
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                               ),
                                             ],
                                           ),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                 },
-                              ),
+                                          // Divider + Remove button
+                                          const SizedBox(height: 10),
+                                          Divider(height: 1, color: Colors.grey[100]),
+                                          const SizedBox(height: 6),
+                                          GestureDetector(
+                                            onTap: () {
+                                              cart.removeItem(item.product.id);
+                                            },
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(Icons.delete_outline, size: 16, color: Colors.red[400]),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  "Remove",
+                                                  style: GoogleFonts.outfit(
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: Colors.red[400],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
 
                               const SizedBox(height: 16),
 
@@ -565,7 +516,7 @@ class CartScreen extends StatelessWidget {
           },
         ),
       ),
-      bottomNavigationBar: cart.items.isEmpty
+      bottomNavigationBar: isCartEmpty
           ? null
           : isWeb
               ? Container(
@@ -614,6 +565,164 @@ class CartScreen extends StatelessWidget {
                     ],
                   ),
                 ),
+    );
+  }
+
+  Widget _buildBuyNowItemCard(Product product) {
+    final packLabel = product.packSize > 1 ? "(Pack of ${product.packSize})" : "(Pack of 1)";
+    final nameWithSuffix = "${product.name} $packLabel";
+
+    return Container(
+      margin: const EdgeInsets.only(left: 20, right: 20, bottom: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey[100]!),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.01),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 76,
+                height: 76,
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey[100]!),
+                ),
+                child: Image.network(
+                  product.image,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => const Icon(
+                    Icons.celebration,
+                    color: Color(0xFFFF8C00),
+                    size: 32,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      nameWithSuffix,
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        color: Colors.black87,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "₹${product.price.toStringAsFixed(0)}",
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                height: 36,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey[200]!),
+                  borderRadius: BorderRadius.circular(10),
+                  color: Colors.white,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        if (_buyNowQty > 1) {
+                          setState(() {
+                            _buyNowQty--;
+                          });
+                        }
+                      },
+                      behavior: HitTestBehavior.opaque,
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 10),
+                        child: Icon(Icons.remove, size: 14, color: Colors.black54),
+                      ),
+                    ),
+                    Container(
+                      width: 1,
+                      height: 20,
+                      color: Colors.grey[200],
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text(
+                        '$_buyNowQty',
+                        style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      width: 1,
+                      height: 20,
+                      color: Colors.grey[200],
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _buyNowQty++;
+                        });
+                      },
+                      behavior: HitTestBehavior.opaque,
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 10),
+                        child: Icon(Icons.add, size: 14, color: Colors.black54),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Divider(height: 1, color: Colors.grey[100]),
+          const SizedBox(height: 6),
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.delete_outline, size: 16, color: Colors.red[400]),
+                const SizedBox(width: 4),
+                Text(
+                  "Cancel Buy Now",
+                  style: GoogleFonts.outfit(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.red[400],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -816,6 +925,8 @@ class CartScreen extends StatelessWidget {
                     discount: 0.0,
                     deliveryCharge: deliveryCharge,
                     toPay: toPay,
+                    buyNowProduct: widget.buyNowProduct,
+                    buyNowQuantity: _buyNowQty,
                   ),
                 ),
               );

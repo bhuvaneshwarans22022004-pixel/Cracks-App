@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../models/product.dart';
 import '../../providers/address_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/order_provider.dart';
@@ -16,6 +17,8 @@ class PaymentScreen extends StatefulWidget {
   final double discount;
   final double deliveryCharge;
   final double toPay;
+  final Product? buyNowProduct;
+  final int? buyNowQuantity;
 
   const PaymentScreen({
     super.key,
@@ -24,6 +27,8 @@ class PaymentScreen extends StatefulWidget {
     required this.discount,
     required this.deliveryCharge,
     required this.toPay,
+    this.buyNowProduct,
+    this.buyNowQuantity,
   });
 
   @override
@@ -254,15 +259,28 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                         return;
                                       }
 
+                                      final orderItems = widget.buyNowProduct != null
+                                          ? [
+                                              {
+                                                'name': widget.buyNowProduct!.name,
+                                                'qty': widget.buyNowQuantity ?? 1,
+                                                'image': widget.buyNowProduct!.image,
+                                                'price': widget.buyNowProduct!.price,
+                                                'originalPrice': widget.buyNowProduct!.originalPrice > 0 ? widget.buyNowProduct!.originalPrice : widget.buyNowProduct!.price,
+                                                'product': widget.buyNowProduct!.id,
+                                              }
+                                            ]
+                                          : cart.items.values.map((item) => {
+                                              'name': item.product.name,
+                                              'qty': item.quantity,
+                                              'image': item.product.image,
+                                              'price': item.product.price,
+                                              'originalPrice': item.product.originalPrice > 0 ? item.product.originalPrice : item.product.price,
+                                              'product': item.product.id,
+                                            }).toList();
+
                                       final orderData = {
-                                        'orderItems': cart.items.values.map((item) => {
-                                          'name': item.product.name,
-                                          'qty': item.quantity,
-                                          'image': item.product.image,
-                                          'price': item.product.price,
-                                          'originalPrice': item.product.originalPrice > 0 ? item.product.originalPrice : item.product.price,
-                                          'product': item.product.id,
-                                        }).toList(),
+                                        'orderItems': orderItems,
                                         'shippingAddress': widget.selectedAddress.formattedAddress,
                                         'paymentMethod': _selectedMethod,
                                         'itemsPrice': widget.totalMrp,
@@ -275,7 +293,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
                                       if (orderId != null) {
                                         if (mounted) {
-                                          cart.clear();
+                                          if (widget.buyNowProduct == null) {
+                                            cart.clear();
+                                          }
                                           Navigator.pushReplacement(
                                             context,
                                             MaterialPageRoute(
@@ -367,6 +387,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
           selectedAddress: widget.selectedAddress,
           totalMrp: widget.totalMrp,
           deliveryCharge: widget.deliveryCharge,
+          buyNowProduct: widget.buyNowProduct,
+          buyNowQuantity: widget.buyNowQuantity,
         );
       },
     );
@@ -385,6 +407,8 @@ class _UPIDialogContent extends StatefulWidget {
   final Address selectedAddress;
   final double totalMrp;
   final double deliveryCharge;
+  final Product? buyNowProduct;
+  final int? buyNowQuantity;
 
   const _UPIDialogContent({
     required this.payUrl,
@@ -398,6 +422,8 @@ class _UPIDialogContent extends StatefulWidget {
     required this.selectedAddress,
     required this.totalMrp,
     required this.deliveryCharge,
+    this.buyNowProduct,
+    this.buyNowQuantity,
   });
 
   @override
@@ -462,6 +488,31 @@ class _UPIDialogContentState extends State<_UPIDialogContent> with WidgetsBindin
     }
   }
 
+  List<Map<String, dynamic>> _getOrderItems() {
+    if (widget.buyNowProduct != null) {
+      final prod = widget.buyNowProduct!;
+      final qty = widget.buyNowQuantity ?? 1;
+      return [
+        {
+          'name': prod.name,
+          'qty': qty,
+          'image': prod.image,
+          'price': prod.price,
+          'originalPrice': prod.originalPrice > 0 ? prod.originalPrice : prod.price,
+          'product': prod.id,
+        }
+      ];
+    }
+    return widget.cart.items.values.map((item) => {
+      'name': item.product.name,
+      'qty': item.quantity,
+      'image': item.product.image,
+      'price': item.product.price,
+      'originalPrice': item.product.originalPrice > 0 ? item.product.originalPrice : item.product.price,
+      'product': item.product.id,
+    }).toList();
+  }
+
   Future<void> _submitOrder() async {
     final utr = _utrController.text.trim();
     if (utr.isEmpty) {
@@ -484,14 +535,7 @@ class _UPIDialogContentState extends State<_UPIDialogContent> with WidgetsBindin
     }
 
     final orderData = {
-      'orderItems': widget.cart.items.values.map((item) => {
-        'name': item.product.name,
-        'qty': item.quantity,
-        'image': item.product.image,
-        'price': item.product.price,
-        'originalPrice': item.product.originalPrice > 0 ? item.product.originalPrice : item.product.price,
-        'product': item.product.id,
-      }).toList(),
+      'orderItems': _getOrderItems(),
       'shippingAddress': widget.selectedAddress.formattedAddress,
       'paymentMethod': 'UPI',
       'paymentResult': {
@@ -509,7 +553,9 @@ class _UPIDialogContentState extends State<_UPIDialogContent> with WidgetsBindin
     final orderId = await widget.orderProvider.createOrder(orderData, token);
 
     if (orderId != null) {
-      widget.cart.clear();
+      if (widget.buyNowProduct == null) {
+        widget.cart.clear();
+      }
       if (mounted) {
         Navigator.pop(context); // Close dialog
         Navigator.pushReplacement(
@@ -548,14 +594,7 @@ class _UPIDialogContentState extends State<_UPIDialogContent> with WidgetsBindin
     }
 
     final orderData = {
-      'orderItems': widget.cart.items.values.map((item) => {
-        'name': item.product.name,
-        'qty': item.quantity,
-        'image': item.product.image,
-        'price': item.product.price,
-        'originalPrice': item.product.originalPrice > 0 ? item.product.originalPrice : item.product.price,
-        'product': item.product.id,
-      }).toList(),
+      'orderItems': _getOrderItems(),
       'shippingAddress': widget.selectedAddress.formattedAddress,
       'paymentMethod': 'UPI',
       'paymentResult': {
@@ -573,7 +612,9 @@ class _UPIDialogContentState extends State<_UPIDialogContent> with WidgetsBindin
     final orderId = await widget.orderProvider.createOrder(orderData, token);
 
     if (orderId != null) {
-      widget.cart.clear();
+      if (widget.buyNowProduct == null) {
+        widget.cart.clear();
+      }
       if (mounted) {
         Navigator.pop(context); // Close dialog
         Navigator.pushReplacement(
@@ -603,14 +644,7 @@ class _UPIDialogContentState extends State<_UPIDialogContent> with WidgetsBindin
     if (token == null) return;
 
     final orderData = {
-      'orderItems': widget.cart.items.values.map((item) => {
-        'name': item.product.name,
-        'qty': item.quantity,
-        'image': item.product.image,
-        'price': item.product.price,
-        'originalPrice': item.product.originalPrice > 0 ? item.product.originalPrice : item.product.price,
-        'product': item.product.id,
-      }).toList(),
+      'orderItems': _getOrderItems(),
       'shippingAddress': widget.selectedAddress.formattedAddress,
       'paymentMethod': 'UPI',
       'paymentResult': {

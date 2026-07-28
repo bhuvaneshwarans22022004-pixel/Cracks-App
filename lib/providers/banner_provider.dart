@@ -24,7 +24,7 @@ class BannerProvider with ChangeNotifier {
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
-        _banners = data.cast<Map<String, dynamic>>();
+        _banners = data.map((item) => Map<String, dynamic>.from(item as Map)).toList();
       } else {
         _error = 'Failed to load banners. Status Code: ${response.statusCode}';
       }

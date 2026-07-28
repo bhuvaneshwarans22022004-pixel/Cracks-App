@@ -26,6 +26,22 @@ import '../../services/update_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../models/product.dart';
 import '../product/product_detail_screen.dart';
+import '../offer/offer_detail_screen.dart';
+
+String getAppCategory(String rawCat) {
+  final cat = rawCat.trim();
+  if (cat.isEmpty) return "Crackers";
+  final lower = cat.toLowerCase();
+  if (lower.contains("gift")) return "Gift Box";
+  if (lower.contains("combo")) return "Combo Products";
+  final oldCrackers = [
+    "one sound crackers", "chorsa crackers", "bijili crackers",
+    "flower pots", "ground chakkars", "sparklers",
+    "aerial fancy novelties", "rockets", "unsorted"
+  ];
+  if (oldCrackers.contains(lower)) return "Crackers";
+  return cat;
+}
 
 class HomeScreen extends StatefulWidget {
   final int initialIndex;
@@ -811,7 +827,12 @@ class _HomeScreenState extends State<HomeScreen> {
       child: LayoutBuilder(
           builder: (context, viewportConstraints) {
             return RefreshIndicator(
-              onRefresh: () => productProvider.fetchProducts(),
+              onRefresh: () async {
+                await Future.wait([
+                  productProvider.fetchProducts(),
+                  bannerProvider.fetchBanners(),
+                ]);
+              },
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 child: ConstrainedBox(
@@ -939,7 +960,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             const Icon(Icons.search_rounded, color: Color(0xFFFF8C00)),
                             const SizedBox(width: 12),
                             Text(
-                              "Search for crackers, gifts, decorations...",
+                              "Search for crackers, gifts...",
                               style: GoogleFonts.outfit(color: Colors.grey[500], fontSize: 13),
                             ),
                           ],
@@ -969,87 +990,98 @@ class _HomeScreenState extends State<HomeScreen> {
                               itemBuilder: (context, index) {
                                 final slide = banners[index];
                                 final hasImage = slide['imageUrl'] != null && slide['imageUrl'].toString().isNotEmpty;
-                                return Container(
-                                  decoration: BoxDecoration(
-                                    gradient: const LinearGradient(
-                                      colors: [Color(0xFF0D1B2A), Color(0xFF1B263B), Color(0xFF415A77)],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
+                                return GestureDetector(
+                                  onTap: () {
+                                    final slideMap = (slide is Map) ? Map<String, dynamic>.from(slide) : <String, dynamic>{};
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => OfferDetailScreen(banner: slideMap),
+                                      ),
+                                    );
+                                  },
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      gradient: const LinearGradient(
+                                        colors: [Color(0xFF0D1B2A), Color(0xFF1B263B), Color(0xFF415A77)],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
+                                      image: hasImage ? DecorationImage(
+                                        image: NetworkImage(slide['imageUrl']!),
+                                        fit: BoxFit.cover,
+                                        colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.4), BlendMode.darken),
+                                      ) : null,
                                     ),
-                                    image: hasImage ? DecorationImage(
-                                      image: NetworkImage(slide['imageUrl']!),
-                                      fit: BoxFit.cover,
-                                      colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.4), BlendMode.darken),
-                                    ) : null,
-                                  ),
-                                  child: Stack(
-                                    children: [
-                                      // Custom Vector sparks drawing on empty banner
-                                      if (!hasImage) Positioned.fill(
-                                        child: CustomPaint(
-                                          painter: BannerSparkPainter(),
+                                    child: Stack(
+                                      children: [
+                                        // Custom Vector sparks drawing on empty banner
+                                        if (!hasImage) Positioned.fill(
+                                          child: CustomPaint(
+                                            painter: BannerSparkPainter(),
+                                          ),
                                         ),
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFFFF9F1C).withOpacity(0.2),
-                                                borderRadius: BorderRadius.circular(12),
-                                                border: Border.all(color: const Color(0xFFFF9F1C).withOpacity(0.4), width: 1),
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                decoration: BoxDecoration(
+                                                  color: const Color(0xFFFF9F1C).withOpacity(0.2),
+                                                  borderRadius: BorderRadius.circular(12),
+                                                  border: Border.all(color: const Color(0xFFFF9F1C).withOpacity(0.4), width: 1),
+                                                ),
+                                                child: Text(
+                                                  "FESTIVE EXCLUSIVE",
+                                                  style: GoogleFonts.outfit(
+                                                    color: const Color(0xFFFFD700),
+                                                    fontSize: 8,
+                                                    fontWeight: FontWeight.bold,
+                                                    letterSpacing: 1,
+                                                  ),
+                                                ),
                                               ),
-                                              child: Text(
-                                                "FESTIVE EXCLUSIVE",
-                                                style: GoogleFonts.outfit(
+                                              const SizedBox(height: 10),
+                                              Text(
+                                                slide['title'] ?? '',
+                                                style: GoogleFonts.playfairDisplay(
                                                   color: const Color(0xFFFFD700),
-                                                  fontSize: 8,
+                                                  fontSize: isWeb ? 30 : 22,
                                                   fontWeight: FontWeight.bold,
-                                                  letterSpacing: 1,
+                                                  height: 1.1,
                                                 ),
                                               ),
-                                            ),
-                                            const SizedBox(height: 10),
-                                            Text(
-                                              slide['title'] ?? '',
-                                              style: GoogleFonts.playfairDisplay(
-                                                color: const Color(0xFFFFD700),
-                                                fontSize: isWeb ? 30 : 22,
-                                                fontWeight: FontWeight.bold,
-                                                height: 1.1,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              slide['subtitle'] ?? '',
-                                              style: GoogleFonts.outfit(
-                                                color: Colors.white,
-                                                fontSize: isWeb ? 16 : 13,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 6),
-                                            Container(
-                                              constraints: const BoxConstraints(maxWidth: 400),
-                                              child: Text(
-                                                slide['desc'] ?? '',
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                slide['subtitle'] ?? '',
                                                 style: GoogleFonts.outfit(
-                                                  color: Colors.white70,
-                                                  fontSize: 10,
-                                                  height: 1.3,
+                                                  color: Colors.white,
+                                                  fontSize: isWeb ? 16 : 13,
+                                                  fontWeight: FontWeight.w600,
                                                 ),
-                                                maxLines: 2,
-                                                overflow: TextOverflow.ellipsis,
                                               ),
-                                            ),
-                                          ],
+                                              const SizedBox(height: 6),
+                                              Container(
+                                                constraints: const BoxConstraints(maxWidth: 400),
+                                                child: Text(
+                                                  slide['desc'] ?? '',
+                                                  style: GoogleFonts.outfit(
+                                                    color: Colors.white70,
+                                                    fontSize: 10,
+                                                    height: 1.3,
+                                                  ),
+                                                  maxLines: 2,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 );
                               },
@@ -1080,22 +1112,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 20),
 
-                  SizedBox(
-                    height: 96,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      children: [
-                        _categoryItem("Crackers", Icons.celebration, const Color(0xFFFF9F1C), "HOT", "Crackers"),
-                        _categoryItem("Gift Boxes", Icons.card_giftcard, const Color(0xFFE91E63), "", "Gifts"),
-                        _categoryItem("Decorations", Icons.lightbulb_outline_rounded, const Color(0xFFFFD700), "", "Decor"),
-                        _categoryItem("New Arrivals", Icons.auto_awesome, const Color(0xFF7C4DFF), "NEW", "New Arrivals"),
-                        _categoryItem("Combo Packs", Icons.inventory_2_outlined, const Color(0xFF00B0FF), "", "Crackers"),
-                        _categoryItem("Best Sellers", Icons.whatshot_rounded, const Color(0xFFFF5722), "", "Wholesale"),
-                      ],
-
-                    ),
-                  ),
+                  _buildDynamicCategoriesList(productProvider),
 
                   const SizedBox(height: 25),
 
@@ -1369,6 +1386,53 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildDynamicCategoriesList(ProductProvider productProvider) {
+    final List<Map<String, dynamic>> items = [
+      {"name": "Crackers", "icon": Icons.celebration, "color": const Color(0xFFFF9F1C), "badge": "HOT", "target": "Crackers"},
+      {"name": "Gift Box", "icon": Icons.card_giftcard, "color": const Color(0xFFE91E63), "badge": "", "target": "Gift Box"},
+      {"name": "Combo Products", "icon": Icons.inventory_2_outlined, "color": const Color(0xFF00B0FF), "badge": "", "target": "Combo Products"},
+    ];
+
+    final seen = <String>{"crackers", "gift box", "combo products"};
+    final colors = [const Color(0xFF7C4DFF), const Color(0xFFFF5722), const Color(0xFF10B981), const Color(0xFF8B5CF6)];
+    int colorIdx = 0;
+
+    for (var p in productProvider.products) {
+      final normalizedCat = getAppCategory(p.category);
+      final lower = normalizedCat.toLowerCase();
+      if (!seen.contains(lower)) {
+        seen.add(lower);
+        items.add({
+          "name": normalizedCat,
+          "icon": lower.contains("decor") ? Icons.auto_awesome : Icons.category_rounded,
+          "color": colors[colorIdx % colors.length],
+          "badge": "NEW",
+          "target": normalizedCat,
+        });
+        colorIdx++;
+      }
+    }
+
+    return SizedBox(
+      height: 96,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: items.length,
+        itemBuilder: (context, idx) {
+          final item = items[idx];
+          return _categoryItem(
+            item["name"] as String,
+            item["icon"] as IconData,
+            item["color"] as Color,
+            item["badge"] as String,
+            item["target"] as String,
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildTimerBlock(String value, String label) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
@@ -1610,7 +1674,6 @@ class _ExploreTabState extends State<ExploreTab> {
       final cLower = cat.toLowerCase();
       if (cLower.contains("cracker")) return "Crackers";
       if (cLower.contains("gift") || cLower.contains("box") || cLower.contains("combo")) return "Gifts";
-      if (cLower.contains("decor")) return "Decor";
       if (cLower.contains("new") || cLower.contains("arrival")) return "New Arrivals";
       return "New Arrivals"; // everything else goes into New Arrivals
     }
@@ -1645,7 +1708,6 @@ class _ExploreTabState extends State<ExploreTab> {
       final cLower = cat.toLowerCase();
       if (cLower.contains("cracker")) return "Crackers";
       if (cLower.contains("gift") || cLower.contains("box") || cLower.contains("combo")) return "Gifts";
-      if (cLower.contains("decor")) return "Decor";
       if (cLower.contains("new") || cLower.contains("arrival")) return "New Arrivals";
       return "New Arrivals"; // everything else goes into New Arrivals
     }
@@ -1842,24 +1904,22 @@ class _ExploreTabState extends State<ExploreTab> {
       final cLower = cat.toLowerCase();
       if (cLower.contains("cracker")) return 0;
       if (cLower.contains("gift") || cLower.contains("box") || cLower.contains("combo")) return 1;
-      if (cLower.contains("decor")) return 2;
       // New Arrivals (or anything unrecognized)
-      return 3;
+      return 2;
     }
 
     // 1. Filter logic
     List<Product> filtered = allProducts.where((product) {
+      final normCat = getAppCategory(product.category);
       final matchesSearch = product.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          product.category.toLowerCase().contains(_searchQuery.toLowerCase());
+          normCat.toLowerCase().contains(_searchQuery.toLowerCase());
       
       bool matchesCategory = false;
-      if (widget.initialCategory == "All") {
+      if (widget.initialCategory == "All" || widget.initialCategory.isEmpty) {
         matchesCategory = true;
       } else {
-        // Always show all sequenced categories (Crackers + Gifts + Decor + New Arrivals) together.
-        // The selected chip only controls scroll position, not what's visible.
-        int prodIndex = getCategorySeqIndex(product.category);
-        matchesCategory = (prodIndex <= 3); // Include all categories incl. New Arrivals
+        matchesCategory = normCat.trim().toLowerCase() == widget.initialCategory.trim().toLowerCase() ||
+            (widget.initialCategory.toLowerCase() == "gifts" && normCat.toLowerCase().contains("gift"));
       }
 
           
@@ -1897,8 +1957,21 @@ class _ExploreTabState extends State<ExploreTab> {
     final filteredProducts = _getFilteredProducts();
     final cart = Provider.of<CartProvider>(context);
 
+    final dynamicCategories = <String>["All"];
+    final seenCats = <String>{};
+    for (var p in widget.productProvider.products) {
+      final normCat = getAppCategory(p.category);
+      final lower = normCat.toLowerCase();
+      if (!seenCats.contains(lower)) {
+        seenCats.add(lower);
+        dynamicCategories.add(normCat);
+      }
+    }
+    if (!seenCats.contains("crackers")) dynamicCategories.add("Crackers");
+    if (!seenCats.contains("gift box")) dynamicCategories.add("Gift Box");
+    if (!seenCats.contains("combo products")) dynamicCategories.add("Combo Products");
 
-    final categories = ["All", "Crackers", "Gifts", "Decor", "New Arrivals"];
+    final categories = dynamicCategories;
     final isWeb = MediaQuery.of(context).size.width > 800;
 
     return SafeArea(
@@ -2130,7 +2203,6 @@ class _ExploreTabState extends State<ExploreTab> {
                               final cLower = cat.toLowerCase();
                               if (cLower.contains("cracker")) return "Crackers";
                               if (cLower.contains("gift") || cLower.contains("box") || cLower.contains("combo")) return "Gift Boxes";
-                              if (cLower.contains("decor")) return "Decorations";
                               return cat;
                             }
 

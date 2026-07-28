@@ -19,7 +19,7 @@ class ProductDetailScreen extends StatefulWidget {
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   int _quantity = 1;
-
+  int _selectedImageIndex = 0;
 
   Map<String, dynamic> _getPricing(Product product) {
     if (product.price <= 0) {
@@ -121,34 +121,88 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ],
                   ),
                 ),
-                // 1. Centered Product Image in White/Grey Container
-                Center(
-                  child: Container(
-                    height: 280,
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[50],
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.grey[100]!),
-                    ),
-                    child: CachedNetworkImage(
-                      imageUrl: product.image,
-                      fit: BoxFit.contain,
-                      placeholder: (context, url) => const Center(
-                        child: SizedBox(
-                          height: 32,
-                          width: 32,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFFF8C00)),
+                // 1. Centered Product Image Gallery (Front, Middle, Back)
+                Builder(
+                  builder: (context) {
+                    final displayImages = product.images.isNotEmpty ? product.images : [product.image];
+                    final activeImage = displayImages.length > _selectedImageIndex ? displayImages[_selectedImageIndex] : product.image;
+                    
+                    return Column(
+                      children: [
+                        Container(
+                          height: 280,
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[50],
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.grey[100]!),
+                          ),
+                          child: CachedNetworkImage(
+                            imageUrl: activeImage,
+                            fit: BoxFit.contain,
+                            placeholder: (context, url) => const Center(
+                              child: SizedBox(
+                                height: 32,
+                                width: 32,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFFF8C00)),
+                              ),
+                            ),
+                            errorWidget: (context, url, error) => const Icon(
+                              Icons.celebration,
+                              color: Color(0xFFFF8C00),
+                              size: 96,
+                            ),
+                          ),
                         ),
-                      ),
-                      errorWidget: (context, url, error) => const Icon(
-                        Icons.celebration,
-                        color: Color(0xFFFF8C00),
-                        size: 96,
-                      ),
-                    ),
-                  ),
+                        if (displayImages.length > 1) ...[
+                          const SizedBox(height: 12),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: List.generate(displayImages.length, (idx) {
+                              final isSelected = idx == _selectedImageIndex;
+                              final angleLabel = idx == 0 ? 'Front' : (idx == 1 ? 'Middle' : 'Back');
+                              return GestureDetector(
+                                onTap: () => setState(() => _selectedImageIndex = idx),
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      margin: const EdgeInsets.symmetric(horizontal: 6),
+                                      width: 56,
+                                      height: 56,
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(
+                                          color: isSelected ? const Color(0xFFFF8C00) : Colors.grey[300]!,
+                                          width: isSelected ? 2 : 1,
+                                        ),
+                                      ),
+                                      child: CachedNetworkImage(
+                                        imageUrl: displayImages[idx],
+                                        fit: BoxFit.contain,
+                                        errorWidget: (context, url, error) => const Icon(Icons.image, size: 20),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      angleLabel,
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 10,
+                                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                        color: isSelected ? const Color(0xFFFF8C00) : Colors.grey[600],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }),
+                          ),
+                        ],
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(height: 20),
 
@@ -347,12 +401,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               showGuestAuthPrompt(context, "Please log in or register to buy products directly.");
                               return;
                             }
-                            for (int i = 0; i < _quantity; i++) {
-                              cart.addItem(product);
-                            }
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (_) => const CartScreen()),
+                              MaterialPageRoute(
+                                builder: (_) => CartScreen(
+                                  buyNowProduct: product,
+                                  buyNowQuantity: _quantity,
+                                ),
+                              ),
                             );
                           }
                         : null,
@@ -365,7 +421,84 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 35),
+                const SizedBox(height: 25),
+
+                // 7.5 Combo Pack Contents Breakdown Card
+                if (product.isCombo || product.comboItems.isNotEmpty) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0FDF4),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFF86EFAC)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "🎁 Combo Pack Contents",
+                              style: GoogleFonts.outfit(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF166534),
+                              ),
+                            ),
+                            if (product.comboDiscountPercent > 0)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF22C55E),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  "${product.comboDiscountPercent.toStringAsFixed(0)}% EXTRA COMBO OFF",
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        ...product.comboItems.map((item) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.check_circle_rounded, color: Color(0xFF16A34A), size: 18),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  "${item.name} (x${item.quantity})",
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: const Color(0xFF14532D),
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                "₹${((item.originalPrice > 0 ? item.originalPrice : item.price) * item.quantity).toStringAsFixed(0)}",
+                                style: GoogleFonts.outfit(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey[700],
+                                  decoration: TextDecoration.lineThrough,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 25),
+                ],
 
                 // 8. Description / Details Section
                 Text(

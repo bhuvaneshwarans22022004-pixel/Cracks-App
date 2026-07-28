@@ -21,6 +21,7 @@ class OrderProvider with ChangeNotifier {
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
         _orders = data.map((json) => Order.fromJson(json)).toList();
+        _orders.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       }
     } catch (e) {
       print(e);
