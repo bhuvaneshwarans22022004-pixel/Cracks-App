@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -5,6 +7,7 @@ import '../../models/product.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/address_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/api_service.dart';
 import '../../widgets/guest_auth_prompt.dart';
 import 'address_screen.dart';
 import 'payment_screen.dart';
@@ -25,6 +28,9 @@ class CartScreen extends StatefulWidget {
 
 class _CartScreenState extends State<CartScreen> {
   late int _buyNowQty;
+  String? _appliedCouponCode;
+  double _appliedDiscountAmount = 0.0;
+  String? _appliedCouponTitle;
 
   @override
   void initState() {
@@ -47,8 +53,8 @@ class _CartScreenState extends State<CartScreen> {
         ? (widget.buyNowProduct!.price * _buyNowQty)
         : cart.totalAmount;
     final double deliveryCharge = totalMrp > 0 ? (totalMrp * 0.03) : 0.0;
-    final double discount = 0.0;
-    final double toPay = totalMrp + deliveryCharge - discount;
+    final double discount = _appliedDiscountAmount;
+    final double toPay = (totalMrp + deliveryCharge - discount).clamp(0.0, double.infinity);
 
     final totalQty = isBuyNow
         ? _buyNowQty
@@ -315,49 +321,101 @@ class _CartScreenState extends State<CartScreen> {
                               // 1. Use Coupons Card
                               Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                                child: InkWell(
-                                  onTap: () {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text("No coupons available right now", style: GoogleFonts.outfit()),
-                                        behavior: SnackBarBehavior.floating,
-                                        width: isWeb ? 400 : null,
-                                      ),
-                                    );
-                                  },
-                                  borderRadius: BorderRadius.circular(16),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(16),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(16),
-                                      border: Border.all(color: const Color(0xFFF1F1F1)),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(6),
+                                child: _appliedCouponCode != null
+                                    ? Container(
+                                        padding: const EdgeInsets.all(14),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFECFDF5),
+                                          borderRadius: BorderRadius.circular(16),
+                                          border: Border.all(color: const Color(0xFF10B981)),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 22),
+                                            const SizedBox(width: 10),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    "Coupon '$_appliedCouponCode' Applied",
+                                                    style: GoogleFonts.outfit(
+                                                      fontWeight: FontWeight.bold,
+                                                      fontSize: 14,
+                                                      color: const Color(0xFF047857),
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    "You saved ₹${_appliedDiscountAmount.toStringAsFixed(0)} on this order!",
+                                                    style: GoogleFonts.outfit(
+                                                      fontSize: 11,
+                                                      color: const Color(0xFF065F46),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            TextButton(
+                                              onPressed: () {
+                                                setState(() {
+                                                  _appliedCouponCode = null;
+                                                  _appliedDiscountAmount = 0.0;
+                                                  _appliedCouponTitle = null;
+                                                });
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text("Coupon removed", style: GoogleFonts.outfit()),
+                                                    behavior: SnackBarBehavior.floating,
+                                                  ),
+                                                );
+                                              },
+                                              child: Text(
+                                                "REMOVE",
+                                                style: GoogleFonts.outfit(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.red[600],
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      )
+                                    : InkWell(
+                                        onTap: () => _showCouponsBottomSheet(context, totalMrp, auth.user?.token),
+                                        borderRadius: BorderRadius.circular(16),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(16),
                                           decoration: BoxDecoration(
-                                            color: Colors.blue.withOpacity(0.1),
-                                            shape: BoxShape.circle,
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(16),
+                                            border: Border.all(color: const Color(0xFFF1F1F1)),
                                           ),
-                                          child: const Icon(Icons.percent_rounded, color: Colors.blueAccent, size: 16),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Text(
-                                          "Use Coupons",
-                                          style: GoogleFonts.outfit(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
-                                            color: Colors.black87,
+                                          child: Row(
+                                            children: [
+                                              Container(
+                                                padding: const EdgeInsets.all(6),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.blue.withOpacity(0.1),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: const Icon(Icons.percent_rounded, color: Colors.blueAccent, size: 16),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Text(
+                                                "Use Coupons",
+                                                style: GoogleFonts.outfit(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 14,
+                                                  color: Colors.black87,
+                                                ),
+                                              ),
+                                              const Spacer(),
+                                              const Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey, size: 14),
+                                            ],
                                           ),
                                         ),
-                                        const Spacer(),
-                                        const Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey, size: 14),
-                                      ],
-                                    ),
-                                  ),
-                                ),
+                                      ),
                               ),
 
                               const SizedBox(height: 16),
@@ -418,6 +476,32 @@ class _CartScreenState extends State<CartScreen> {
                                           ),
                                         ],
                                       ),
+                                      if (_appliedDiscountAmount > 0) ...[
+                                        const SizedBox(height: 12),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Icon(Icons.local_offer_rounded, size: 14, color: Colors.green[600]),
+                                                const SizedBox(width: 6),
+                                                Text(
+                                                  "Coupon Discount (${_appliedCouponCode})",
+                                                  style: GoogleFonts.outfit(color: Colors.green[700], fontSize: 13, fontWeight: FontWeight.w600),
+                                                ),
+                                              ],
+                                            ),
+                                            Text(
+                                              "-₹${_appliedDiscountAmount.toStringAsFixed(2)}",
+                                              style: GoogleFonts.outfit(
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.green[700],
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
                                       const Padding(
                                         padding: EdgeInsets.symmetric(vertical: 14),
                                         child: Divider(height: 1, thickness: 1),
@@ -770,6 +854,331 @@ class _CartScreenState extends State<CartScreen> {
     );
   }
 
+  void _showCouponsBottomSheet(BuildContext context, double cartTotal, String? token) {
+    final codeController = TextEditingController();
+    bool isApplying = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (bottomSheetContext) {
+        return StatefulBuilder(
+          builder: (context, setBottomSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                top: 20,
+                left: 20,
+                right: 20,
+              ),
+              child: Container(
+                constraints: const BoxConstraints(maxHeight: 520),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFF8C00).withOpacity(0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.confirmation_number_rounded, color: Color(0xFFFF8C00), size: 20),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              "Coupons & Offers",
+                              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Coupon Input Box
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: codeController,
+                            textCapitalization: TextCapitalization.characters,
+                            decoration: InputDecoration(
+                              hintText: "Enter Coupon Code",
+                              hintStyle: GoogleFonts.outfit(color: Colors.grey),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.grey[300]!),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFF8C00),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                          ),
+                          onPressed: isApplying
+                              ? null
+                              : () async {
+                                  final enteredCode = codeController.text.trim();
+                                  if (enteredCode.isEmpty) return;
+
+                                  setBottomSheetState(() => isApplying = true);
+                                  try {
+                                    final res = await ApiService.post('coupons/apply', {
+                                      'code': enteredCode,
+                                      'cartTotal': cartTotal,
+                                    }, token: token);
+
+                                    final resData = jsonDecode(res.body);
+
+                                    if (res.statusCode == 200 && resData['success'] == true) {
+                                      final c = resData['coupon'];
+                                      setState(() {
+                                        _appliedCouponCode = c['code'];
+                                        _appliedDiscountAmount = (c['discountAmount'] as num).toDouble();
+                                        _appliedCouponTitle = c['title'];
+                                      });
+                                      Navigator.pop(context);
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text("🎉 Coupon ${c['code']} applied! Saved ₹${c['discountAmount']}", style: GoogleFonts.outfit()),
+                                          backgroundColor: const Color(0xFF10B981),
+                                          behavior: SnackBarBehavior.floating,
+                                        ),
+                                      );
+                                    } else {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(resData['message'] ?? "Invalid coupon code", style: GoogleFonts.outfit()),
+                                          backgroundColor: Colors.redAccent,
+                                          behavior: SnackBarBehavior.floating,
+                                        ),
+                                      );
+                                    }
+                                  } catch (err) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text("Failed to apply coupon: $err", style: GoogleFonts.outfit()),
+                                        backgroundColor: Colors.redAccent,
+                                      ),
+                                    );
+                                  } finally {
+                                    setBottomSheetState(() => isApplying = false);
+                                  }
+                                },
+                          child: isApplying
+                              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                              : Text("APPLY", style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Available Coupons Header
+                    Text(
+                      "Available Coupons for You",
+                      style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black87),
+                    ),
+                    const SizedBox(height: 10),
+
+                    // FutureBuilder to load active coupons
+                    Expanded(
+                      child: FutureBuilder<http.Response>(
+                        future: ApiService.get('coupons/active', token: token),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return const Center(child: CircularProgressIndicator(color: Color(0xFFFF8C00)));
+                          }
+                          if (snapshot.hasError || snapshot.data == null || snapshot.data!.statusCode != 200) {
+                            return Center(
+                              child: Text("Unable to load coupons", style: GoogleFonts.outfit(color: Colors.grey)),
+                            );
+                          }
+
+                          final resData = jsonDecode(snapshot.data!.body);
+                          final couponsList = (resData['coupons'] as List? ?? []);
+
+                          if (couponsList.isEmpty) {
+                            return Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.local_offer_outlined, size: 48, color: Colors.grey[300]),
+                                  const SizedBox(height: 10),
+                                  Text("No active coupons available right now", style: GoogleFonts.outfit(color: Colors.grey[600])),
+                                ],
+                              ),
+                            );
+                          }
+
+                          return ListView.builder(
+                            itemCount: couponsList.length,
+                            itemBuilder: (context, index) {
+                              final item = couponsList[index];
+                              final String code = item['code'] ?? '';
+                              final String title = item['title'] ?? '';
+                              final String desc = item['description'] ?? '';
+                              final double minAmount = (item['minPurchaseAmount'] as num? ?? 0).toDouble();
+                              final bool isEligible = cartTotal >= minAmount;
+                              final bool isUserReward = item['isUserSpecific'] == true;
+
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: isUserReward ? const Color(0xFFECFDF5) : Colors.white,
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: isUserReward ? const Color(0xFF10B981) : Colors.grey[200]!,
+                                    width: isUserReward ? 1.5 : 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                                decoration: BoxDecoration(
+                                                  color: isUserReward ? const Color(0xFF10B981) : const Color(0xFFFF8C00),
+                                                  borderRadius: BorderRadius.circular(6),
+                                                ),
+                                                child: Text(
+                                                  code,
+                                                  style: GoogleFonts.outfit(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 12,
+                                                    color: Colors.white,
+                                                    letterSpacing: 1,
+                                                  ),
+                                                ),
+                                              ),
+                                              if (isUserReward) ...[
+                                                const SizedBox(width: 8),
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                  decoration: BoxDecoration(
+                                                    color: const Color(0xFF047857).withOpacity(0.15),
+                                                    borderRadius: BorderRadius.circular(4),
+                                                  ),
+                                                  child: Text(
+                                                    "🎁 Reward Coupon",
+                                                    style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF047857)),
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            title,
+                                            style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87),
+                                          ),
+                                          if (desc.isNotEmpty) ...[
+                                            const SizedBox(height: 2),
+                                            Text(desc, style: GoogleFonts.outfit(fontSize: 11, color: Colors.grey[600])),
+                                          ],
+                                          if (minAmount > 0) ...[
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              "Min purchase: ₹${minAmount.toStringAsFixed(0)}",
+                                              style: GoogleFonts.outfit(fontSize: 10, color: Colors.grey[500], fontWeight: FontWeight.w500),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: isEligible ? const Color(0xFFFF8C00) : Colors.grey[300],
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                        elevation: 0,
+                                      ),
+                                      onPressed: isEligible
+                                          ? () async {
+                                              try {
+                                                final res = await ApiService.post('coupons/apply', {
+                                                  'code': code,
+                                                  'cartTotal': cartTotal,
+                                                }, token: token);
+
+                                                final resData = jsonDecode(res.body);
+
+                                                if (res.statusCode == 200 && resData['success'] == true) {
+                                                  final c = resData['coupon'];
+                                                  setState(() {
+                                                    _appliedCouponCode = c['code'];
+                                                    _appliedDiscountAmount = (c['discountAmount'] as num).toDouble();
+                                                    _appliedCouponTitle = c['title'];
+                                                  });
+                                                  Navigator.pop(context);
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    SnackBar(
+                                                      content: Text("🎉 Coupon ${c['code']} applied! Saved ₹${c['discountAmount']}", style: GoogleFonts.outfit()),
+                                                      backgroundColor: const Color(0xFF10B981),
+                                                      behavior: SnackBarBehavior.floating,
+                                                    ),
+                                                  );
+                                                }
+                                              } catch (err) {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  SnackBar(content: Text("Error: $err")),
+                                                );
+                                              }
+                                            }
+                                          : null,
+                                      child: Text(
+                                        isEligible ? "APPLY" : "Add ₹${(minAmount - cartTotal).toStringAsFixed(0)}",
+                                        style: GoogleFonts.outfit(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                          color: isEligible ? Colors.white : Colors.grey[700],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   Widget _buildAddressSection(BuildContext context, Address? selectedAddress, double totalMrp, double deliveryCharge, double toPay) {
     return Container(
       decoration: BoxDecoration(
@@ -922,7 +1331,7 @@ class _CartScreenState extends State<CartScreen> {
                   builder: (_) => PaymentScreen(
                     selectedAddress: selectedAddress,
                     totalMrp: totalMrp,
-                    discount: 0.0,
+                    discount: _appliedDiscountAmount,
                     deliveryCharge: deliveryCharge,
                     toPay: toPay,
                     buyNowProduct: widget.buyNowProduct,

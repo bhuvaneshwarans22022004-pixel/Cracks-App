@@ -17,6 +17,7 @@ import '../../services/storage_service.dart';
 import '../../widgets/product_card.dart';
 import '../cart/cart_screen.dart';
 import '../enquiry/wholesale_enquiry_screen.dart';
+import '../enquiry/service_enquiry_screen.dart';
 import '../profile/profile_screen.dart';
 import '../wishlist/wishlist_screen.dart';
 import '../order/order_history_screen.dart';
@@ -776,6 +777,14 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
           ListTile(
+            leading: const Icon(Icons.handyman_outlined, color: Color(0xFFFF8C00)),
+            title: const Text("Service Enquiries (Solar, Photo, Transport)"),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const ServiceEnquiryScreen()));
+            },
+          ),
+          ListTile(
             leading: const Icon(Icons.person_outline),
             title: const Text("Profile"),
             onTap: () {
@@ -966,6 +975,54 @@ class _HomeScreenState extends State<HomeScreen> {
                           ],
                         ),
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+
+                  // 2.5 Service Quick Action Banners (Solar, Photography, Transport)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _buildServiceBannerCard(
+                            context,
+                            title: "Solar Enquiry",
+                            subtitle: "Home & Solar",
+                            icon: Icons.wb_sunny_rounded,
+                            bgColor: const Color(0xFFFFF7ED),
+                            borderColor: const Color(0xFFFFD8A8),
+                            accentColor: const Color(0xFFFF8C00),
+                            type: "solar",
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _buildServiceBannerCard(
+                            context,
+                            title: "Photography",
+                            subtitle: "Events & More",
+                            icon: Icons.camera_alt_rounded,
+                            bgColor: const Color(0xFFF3E8FF),
+                            borderColor: const Color(0xFFDDD6FE),
+                            accentColor: const Color(0xFF8B5CF6),
+                            type: "photography",
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _buildServiceBannerCard(
+                            context,
+                            title: "Transport",
+                            subtitle: "Parcel & Truck",
+                            icon: Icons.local_shipping_rounded,
+                            bgColor: const Color(0xFFECFDF5),
+                            borderColor: const Color(0xFFA7F3D0),
+                            accentColor: const Color(0xFF10B981),
+                            type: "transport",
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -1548,6 +1605,86 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildServiceBannerCard(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color bgColor,
+    required Color borderColor,
+    required Color accentColor,
+    required String type,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ServiceEnquiryScreen(initialType: type),
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: borderColor, width: 1.2),
+          boxShadow: [
+            BoxShadow(
+              color: accentColor.withOpacity(0.06),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            )
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: accentColor,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: Colors.white, size: 16),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                      color: Colors.black87,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.outfit(
+                      fontSize: 9,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios_rounded, size: 9, color: accentColor),
+          ],
+        ),
       ),
     );
   }

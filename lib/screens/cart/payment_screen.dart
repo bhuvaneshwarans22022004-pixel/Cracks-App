@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -8,6 +9,7 @@ import '../../providers/address_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/api_service.dart';
 import 'order_placed_screen.dart';
 import '../../utils/constants.dart';
 
@@ -37,6 +39,46 @@ class PaymentScreen extends StatefulWidget {
 
 class _PaymentScreenState extends State<PaymentScreen> {
   String? _selectedMethod = 'UPI';
+  String _upiId = AppConstants.upiId;
+  String _gpayNumber = AppConstants.gpayNumber;
+  String _payeeName = "FestiveKart";
+  List<Map<String, dynamic>> _upiAccounts = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchPaymentSettings();
+  }
+
+  Future<void> _fetchPaymentSettings() async {
+    try {
+      final res = await ApiService.get('payment-settings');
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        if (data['success'] == true && data['settings'] != null) {
+          final settings = data['settings'];
+          if (mounted) {
+            setState(() {
+              if (settings['upiAccounts'] != null && (settings['upiAccounts'] as List).isNotEmpty) {
+                _upiAccounts = List<Map<String, dynamic>>.from(settings['upiAccounts']);
+              }
+              if (settings['upiId'] != null && (settings['upiId'] as String).isNotEmpty) {
+                _upiId = settings['upiId'];
+              }
+              if (settings['gpayNumber'] != null && (settings['gpayNumber'] as String).isNotEmpty) {
+                _gpayNumber = settings['gpayNumber'];
+              }
+              if (settings['payeeName'] != null && (settings['payeeName'] as String).isNotEmpty) {
+                _payeeName = settings['payeeName'];
+              }
+            });
+          }
+        }
+      }
+    } catch (e) {
+      print("Error fetching dynamic payment settings: $e");
+    }
+  }
 
   Widget _buildPaymentOption({
     required String method,
@@ -119,6 +161,42 @@ class _PaymentScreenState extends State<PaymentScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  void _showUPIDialog(BuildContext context, AuthProvider auth, CartProvider cart, OrderProvider orderProvider) async {
+    await _fetchPaymentSettings();
+
+    if (!mounted) return;
+
+    final accounts = _upiAccounts.isNotEmpty
+        ? _upiAccounts
+        : [
+            {
+              'title': 'UPI Option 1',
+              'upiId': _upiId,
+              'gpayNumber': _gpayNumber,
+              'payeeName': _payeeName,
+            }
+          ];
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return _UPIDialogContent(
+          upiAccounts: accounts,
+          toPay: widget.toPay,
+          auth: auth,
+          cart: cart,
+          orderProvider: orderProvider,
+          selectedAddress: widget.selectedAddress,
+          totalMrp: widget.totalMrp,
+          deliveryCharge: widget.deliveryCharge,
+          buyNowProduct: widget.buyNowProduct,
+          buyNowQuantity: widget.buyNowQuantity,
+        );
+      },
     );
   }
 
@@ -364,42 +442,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
       ),
     );
   }
-
-  void _showUPIDialog(BuildContext context, AuthProvider auth, CartProvider cart, OrderProvider orderProvider) {
-    final String upiId = AppConstants.upiId; 
-    final String gpayNumber = AppConstants.gpayNumber; 
-    final String payUrl = "upi://pay?pa=$upiId&pn=FestiveKart&am=${widget.toPay.toStringAsFixed(0)}&cu=INR";
-    final String qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${Uri.encodeComponent(payUrl)}";
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        return _UPIDialogContent(
-          payUrl: payUrl,
-          qrUrl: qrUrl,
-          gpayNumber: gpayNumber,
-          upiId: upiId,
-          toPay: widget.toPay,
-          auth: auth,
-          cart: cart,
-          orderProvider: orderProvider,
-          selectedAddress: widget.selectedAddress,
-          totalMrp: widget.totalMrp,
-          deliveryCharge: widget.deliveryCharge,
-          buyNowProduct: widget.buyNowProduct,
-          buyNowQuantity: widget.buyNowQuantity,
-        );
-      },
-    );
-  }
 }
 
 class _UPIDialogContent extends StatefulWidget {
-  final String payUrl;
-  final String qrUrl;
-  final String gpayNumber;
-  final String upiId;
+  final List<Map<String, dynamic>> upiAccounts;
   final double toPay;
   final AuthProvider auth;
   final CartProvider cart;
@@ -411,10 +457,8 @@ class _UPIDialogContent extends StatefulWidget {
   final int? buyNowQuantity;
 
   const _UPIDialogContent({
-    required this.payUrl,
-    required this.qrUrl,
-    required this.gpayNumber,
-    required this.upiId,
+    super.key,
+    required this.upiAccounts,
     required this.toPay,
     required this.auth,
     required this.cart,
@@ -431,12 +475,27 @@ class _UPIDialogContent extends StatefulWidget {
 }
 
 class _UPIDialogContentState extends State<_UPIDialogContent> with WidgetsBindingObserver {
+  int _selectedAccIdx = 0;
   bool _hasOpenedUPI = false;
   bool _showStatusVerification = false;
   bool _showUtrForm = false;
   bool _showFailedOptions = false;
   bool _isSubmitting = false;
   final _utrController = TextEditingController();
+
+  Map<String, dynamic> get _currentAccount {
+    if (_selectedAccIdx < widget.upiAccounts.length) {
+      return widget.upiAccounts[_selectedAccIdx];
+    }
+    return widget.upiAccounts.isNotEmpty ? widget.upiAccounts[0] : {};
+  }
+
+  String get _currentUpiId => _currentAccount['upiId'] ?? '';
+  String get _currentGpayNumber => _currentAccount['gpayNumber'] ?? '';
+  String get _currentPayeeName => _currentAccount['payeeName'] ?? 'FestiveKart';
+
+  String get _currentPayUrl => "upi://pay?pa=$_currentUpiId&pn=${Uri.encodeComponent(_currentPayeeName)}&am=${widget.toPay.toStringAsFixed(0)}&cu=INR";
+  String get _currentQrUrl => "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${Uri.encodeComponent(_currentPayUrl)}";
 
   @override
   void initState() {
@@ -464,7 +523,7 @@ class _UPIDialogContentState extends State<_UPIDialogContent> with WidgetsBindin
   }
 
   Future<void> _launchUPI() async {
-    final uri = Uri.parse(widget.payUrl);
+    final uri = Uri.parse(_currentPayUrl);
     try {
       setState(() {
         _hasOpenedUPI = true;
@@ -710,7 +769,7 @@ class _UPIDialogContentState extends State<_UPIDialogContent> with WidgetsBindin
               child: GestureDetector(
                 onTap: _launchUPI,
                 child: Image.network(
-                  widget.qrUrl,
+                  _currentQrUrl,
                   width: 180,
                   height: 180,
                   errorBuilder: (context, error, stackTrace) => const Icon(Icons.qr_code_2_rounded, size: 100, color: Colors.grey),
@@ -747,14 +806,14 @@ class _UPIDialogContentState extends State<_UPIDialogContent> with WidgetsBindin
                       Text("GPay / PhonePe:", style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey[700])),
                       GestureDetector(
                         onTap: () {
-                          Clipboard.setData(ClipboardData(text: widget.gpayNumber));
+                          Clipboard.setData(ClipboardData(text: _currentGpayNumber));
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text("Number copied to clipboard!")),
                           );
                         },
                         child: Row(
                           children: [
-                            Text(widget.gpayNumber, style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87)),
+                            Text(_currentGpayNumber, style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87)),
                             const SizedBox(width: 4),
                             const Icon(Icons.copy_rounded, size: 12, color: Color(0xFFFF8C00)),
                           ],
@@ -769,14 +828,14 @@ class _UPIDialogContentState extends State<_UPIDialogContent> with WidgetsBindin
                       Text("UPI ID:", style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey[700])),
                       GestureDetector(
                         onTap: () {
-                          Clipboard.setData(ClipboardData(text: widget.upiId));
+                          Clipboard.setData(ClipboardData(text: _currentUpiId));
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text("UPI ID copied to clipboard!")),
                           );
                         },
                         child: Row(
                           children: [
-                            Text(widget.upiId, style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87)),
+                            Text(_currentUpiId, style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87)),
                             const SizedBox(width: 4),
                             const Icon(Icons.copy_rounded, size: 12, color: Color(0xFFFF8C00)),
                           ],
