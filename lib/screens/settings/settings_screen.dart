@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/language_provider.dart';
 import 'cms_content_screen.dart';
+import '../home/home_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});

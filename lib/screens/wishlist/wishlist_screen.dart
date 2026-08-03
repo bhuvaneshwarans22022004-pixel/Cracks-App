@@ -8,6 +8,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../models/product.dart';
 import '../../screens/product/product_detail_screen.dart';
+import '../home/home_screen.dart';
 
 class WishlistScreen extends StatefulWidget {
   const WishlistScreen({super.key});

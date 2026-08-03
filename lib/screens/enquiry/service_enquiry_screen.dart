@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/address_provider.dart';
 import '../../services/api_service.dart';
+import '../home/home_screen.dart';
 
 class ServiceEnquiryScreen extends StatefulWidget {
   final String initialType; // 'solar', 'photography', 'transport', 'real-estate', 'website'
