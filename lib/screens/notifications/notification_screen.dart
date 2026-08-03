@@ -105,7 +105,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(
-              builder: (_) => const HomeScreen(initialIndex: 2),
+              builder: (_) => HomeScreen(initialIndex: 2),
             ),
             (route) => false,
           );

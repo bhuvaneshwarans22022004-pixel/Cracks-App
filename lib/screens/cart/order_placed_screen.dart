@@ -40,7 +40,7 @@ class OrderPlacedScreen extends StatelessWidget {
             // Safe exit to Home tab
             Navigator.pushAndRemoveUntil(
               context,
-              MaterialPageRoute(builder: (_) => const HomeScreen(initialIndex: 0)),
+              MaterialPageRoute(builder: (_) => HomeScreen(initialIndex: 0)),
               (route) => false,
             );
           },
@@ -198,7 +198,7 @@ class OrderPlacedScreen extends StatelessWidget {
                               Navigator.pushAndRemoveUntil(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => const HomeScreen(initialIndex: 2),
+                                  builder: (_) => HomeScreen(initialIndex: 2),
                                 ),
                                 (route) => false,
                               );
@@ -295,7 +295,7 @@ class OrderPlacedScreen extends StatelessWidget {
                               Navigator.pushAndRemoveUntil(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => const HomeScreen(initialIndex: 0),
+                                  builder: (_) => HomeScreen(initialIndex: 0),
                                 ),
                                 (route) => false,
                               );

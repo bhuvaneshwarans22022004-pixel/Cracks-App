@@ -24,7 +24,7 @@ class SettingsScreen extends StatelessWidget {
           onPressed: () {
             Navigator.pushAndRemoveUntil(
               context,
-              MaterialPageRoute(builder: (_) => const HomeScreen(initialIndex: 0)),
+              MaterialPageRoute(builder: (_) => HomeScreen(initialIndex: 0)),
               (route) => false,
             );
           },
