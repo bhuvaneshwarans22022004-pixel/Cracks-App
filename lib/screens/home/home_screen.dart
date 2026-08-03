@@ -979,50 +979,85 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 4),
 
-                  // 2.5 Service Quick Action Banners (Solar, Photography, Transport)
+                  // 2.5 Service Quick Action Banners (Solar, Photography, Transport, Real Estate, Website)
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _buildServiceBannerCard(
-                            context,
-                            title: "Solar Enquiry",
-                            subtitle: "Home & Solar",
-                            icon: Icons.wb_sunny_rounded,
-                            bgColor: const Color(0xFFFFF7ED),
-                            borderColor: const Color(0xFFFFD8A8),
-                            accentColor: const Color(0xFFFF8C00),
-                            type: "solar",
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: 145,
+                            child: _buildServiceBannerCard(
+                              context,
+                              title: "Solar Enquiry",
+                              subtitle: "Home & Solar",
+                              icon: Icons.wb_sunny_rounded,
+                              bgColor: const Color(0xFFFFF7ED),
+                              borderColor: const Color(0xFFFFD8A8),
+                              accentColor: const Color(0xFFFF8C00),
+                              type: "solar",
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _buildServiceBannerCard(
-                            context,
-                            title: "Photography",
-                            subtitle: "Events & More",
-                            icon: Icons.camera_alt_rounded,
-                            bgColor: const Color(0xFFF3E8FF),
-                            borderColor: const Color(0xFFDDD6FE),
-                            accentColor: const Color(0xFF8B5CF6),
-                            type: "photography",
+                          const SizedBox(width: 8),
+                          SizedBox(
+                            width: 145,
+                            child: _buildServiceBannerCard(
+                              context,
+                              title: "Photography",
+                              subtitle: "Events & More",
+                              icon: Icons.camera_alt_rounded,
+                              bgColor: const Color(0xFFF3E8FF),
+                              borderColor: const Color(0xFFDDD6FE),
+                              accentColor: const Color(0xFF8B5CF6),
+                              type: "photography",
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _buildServiceBannerCard(
-                            context,
-                            title: "Transport",
-                            subtitle: "Parcel & Truck",
-                            icon: Icons.local_shipping_rounded,
-                            bgColor: const Color(0xFFECFDF5),
-                            borderColor: const Color(0xFFA7F3D0),
-                            accentColor: const Color(0xFF10B981),
-                            type: "transport",
+                          const SizedBox(width: 8),
+                          SizedBox(
+                            width: 145,
+                            child: _buildServiceBannerCard(
+                              context,
+                              title: "Transport",
+                              subtitle: "Parcel & Truck",
+                              icon: Icons.local_shipping_rounded,
+                              bgColor: const Color(0xFFECFDF5),
+                              borderColor: const Color(0xFFA7F3D0),
+                              accentColor: const Color(0xFF10B981),
+                              type: "transport",
+                            ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 8),
+                          SizedBox(
+                            width: 145,
+                            child: _buildServiceBannerCard(
+                              context,
+                              title: "Real Estate",
+                              subtitle: "Plots & Rent",
+                              icon: Icons.home_work_rounded,
+                              bgColor: const Color(0xFFFEFCE8),
+                              borderColor: const Color(0xFFFEF08A),
+                              accentColor: const Color(0xFFD97706),
+                              type: "real-estate",
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          SizedBox(
+                            width: 145,
+                            child: _buildServiceBannerCard(
+                              context,
+                              title: "Website Enquiry",
+                              subtitle: "Web & Digital",
+                              icon: Icons.language_rounded,
+                              bgColor: const Color(0xFFEFF6FF),
+                              borderColor: const Color(0xFFBFDBFE),
+                              accentColor: const Color(0xFF2563EB),
+                              type: "website",
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),

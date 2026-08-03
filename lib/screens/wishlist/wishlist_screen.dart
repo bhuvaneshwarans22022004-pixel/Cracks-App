@@ -70,6 +70,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
+        centerTitle: isWeb,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87),
           onPressed: () => Navigator.pop(context),
@@ -118,7 +119,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
       body: SafeArea(
         child: Center(
           child: Container(
-            constraints: BoxConstraints(maxWidth: isWeb ? 1200 : double.infinity),
+            constraints: BoxConstraints(maxWidth: isWeb ? 1000 : double.infinity),
             child: wishlist.items.isEmpty
                 ? _buildEmptyState(context)
                 : Column(
@@ -163,10 +164,26 @@ class _WishlistScreenState extends State<WishlistScreen> {
 
   // Beautiful empty state with custom Diwali background & Premium UI layout
   Widget _buildEmptyState(BuildContext context) {
+    final bool isWeb = MediaQuery.of(context).size.width > 800;
+
     return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       child: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 60),
+        child: Container(
+          constraints: BoxConstraints(maxWidth: isWeb ? 1000 : double.infinity),
+          padding: EdgeInsets.symmetric(horizontal: 32, vertical: isWeb ? 80 : 60),
+          decoration: isWeb
+              ? BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    )
+                  ],
+                )
+              : null,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -242,10 +259,14 @@ class _WishlistScreenState extends State<WishlistScreen> {
 
   // Filter chips and sorting menu builder
   Widget _buildFiltersBar(List<String> categories) {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Column(
+    final bool isWeb = MediaQuery.of(context).size.width > 800;
+
+    return Center(
+      child: Container(
+        constraints: BoxConstraints(maxWidth: isWeb ? 1000 : double.infinity),
+        color: Colors.white,
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Column(
         children: [
           // Category filter row
           SingleChildScrollView(
@@ -327,6 +348,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
           ),
         ],
       ),
+     ),
     );
   }
 

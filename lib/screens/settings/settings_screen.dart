@@ -11,84 +11,106 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final langProvider = Provider.of<LanguageProvider>(context);
+    final bool isWeb = MediaQuery.of(context).size.width > 768;
 
     return Scaffold(
+      backgroundColor: isWeb ? const Color(0xFFF3F4F6) : null,
       appBar: AppBar(
         title: const Text("Settings"),
+        centerTitle: isWeb,
+        elevation: isWeb ? 0 : null,
       ),
-      body: ListView(
-        children: [
-          ListTile(
-            leading: const Icon(Icons.notifications_outlined),
-            title: const Text("Push Notifications"),
-            trailing: Switch(
-              value: true, 
-              onChanged: (val) {
-                // Future implementation for notifications
-              },
-              activeColor: const Color(0xFFFF8C00),
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.language_outlined),
-            title: const Text("Language"),
-            subtitle: Text(langProvider.currentLanguage),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => _showLanguageDialog(context, langProvider),
-          ),
-          ListTile(
-            leading: const Icon(Icons.dark_mode_outlined),
-            title: const Text("Dark Mode"),
-            trailing: Switch(
-              value: themeProvider.isDarkMode,
-              onChanged: (val) => themeProvider.toggleTheme(),
-              activeColor: const Color(0xFFFF8C00),
-            ),
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.info_outline),
-            title: const Text("About Us"),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const CmsContentScreen(
-                  title: "About Us",
-                  contentType: "about_us",
+      body: Center(
+        child: Container(
+          constraints: BoxConstraints(maxWidth: isWeb ? 1000 : double.infinity),
+          decoration: isWeb
+              ? BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    )
+                  ],
+                )
+              : null,
+          child: ListView(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            children: [
+                ListTile(
+                  leading: const Icon(Icons.notifications_outlined),
+                  title: const Text("Push Notifications"),
+                  trailing: Switch(
+                    value: true, 
+                    onChanged: (val) {
+                      // Future implementation for notifications
+                    },
+                    activeColor: const Color(0xFFFF8C00),
+                  ),
                 ),
-              ),
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.privacy_tip_outlined),
-            title: const Text("Privacy Policy"),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const CmsContentScreen(
-                  title: "Privacy Policy",
-                  contentType: "privacy_policy",
+                ListTile(
+                  leading: const Icon(Icons.language_outlined),
+                  title: const Text("Language"),
+                  subtitle: Text(langProvider.currentLanguage),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => _showLanguageDialog(context, langProvider),
                 ),
-              ),
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.help_outline),
-            title: const Text("Help & Support"),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const CmsContentScreen(
-                  title: "Help & Support",
-                  contentType: "help_support",
+                ListTile(
+                  leading: const Icon(Icons.dark_mode_outlined),
+                  title: const Text("Dark Mode"),
+                  trailing: Switch(
+                    value: themeProvider.isDarkMode,
+                    onChanged: (val) => themeProvider.toggleTheme(),
+                    activeColor: const Color(0xFFFF8C00),
+                  ),
                 ),
-              ),
+                const Divider(),
+                ListTile(
+                  leading: const Icon(Icons.info_outline),
+                  title: const Text("About Us"),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const CmsContentScreen(
+                        title: "About Us",
+                        contentType: "about_us",
+                      ),
+                    ),
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.privacy_tip_outlined),
+                  title: const Text("Privacy Policy"),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const CmsContentScreen(
+                        title: "Privacy Policy",
+                        contentType: "privacy_policy",
+                      ),
+                    ),
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.help_outline),
+                  title: const Text("Help & Support"),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const CmsContentScreen(
+                        title: "Help & Support",
+                        contentType: "help_support",
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      );
+    }
 
   void _showLanguageDialog(BuildContext context, LanguageProvider provider) {
     showDialog(

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -8,7 +9,7 @@ import '../../providers/address_provider.dart';
 import '../../services/api_service.dart';
 
 class ServiceEnquiryScreen extends StatefulWidget {
-  final String initialType; // 'solar', 'photography', 'transport'
+  final String initialType; // 'solar', 'photography', 'transport', 'real-estate', 'website'
   const ServiceEnquiryScreen({super.key, this.initialType = 'solar'});
 
   @override
@@ -68,6 +69,40 @@ class _ServiceEnquiryScreenState extends State<ServiceEnquiryScreen> {
   DateTime? _transPickupDate;
   DateTime? _transDeliveryDate;
 
+  // 4. Real Estate Fields
+  String _reLookingFor = 'Buy'; // 'Buy', 'Sell', 'Rent', 'Plot'
+  String? _rePropertyCategory = 'Apartment / Flat';
+  String? _reBhkType = '2 BHK';
+  String? _reBudgetRange = '₹25 - 50 Lakhs';
+  String? _reAreaSqFt;
+  final _rePreferredLocationController = TextEditingController();
+  final _reLandmarkLocalityController = TextEditingController();
+  String? _reFurnishing = 'Any';
+  String? _reFacing = 'Any';
+  String? _reFloorPreference = 'Any';
+  String? _rePropertyAge = 'Any';
+  final List<String> _reAmenities = [];
+  String? _rePreferredContactTime = 'Any Time';
+  String? _reDocumentFileName;
+
+  // 5. Website Fields
+  final _webBusinessNameController = TextEditingController();
+  String? _webBusinessType = 'Retail / Shop';
+  String? _webIndustryCategory = 'E-Commerce';
+  final _webExistingWebsiteController = TextEditingController();
+  String _webWebsiteType = 'Static Website (Informational)';
+  final List<String> _webWebsitePurpose = ['Business / Company Profile'];
+  final List<String> _webWebsiteFeatures = ['Responsive (Mobile Friendly)', 'Contact / Enquiry Form', 'SEO Optimization'];
+  String? _webDesignPreference = 'Modern & Sleek';
+  final _webColorPreferenceController = TextEditingController();
+  final _webReferenceWebsiteController = TextEditingController();
+  String _webContentReady = 'No';
+  String? _webEstimatedBudget = '₹10,000 - ₹25,000';
+  String? _webRequiredTimeframe = '2-3 Weeks';
+  String _webHasDomainHosting = 'No';
+  String? _webPreferredContactTime = 'Any Time';
+  String? _webReferenceFileName;
+
   final ImagePicker _picker = ImagePicker();
 
   @override
@@ -96,6 +131,7 @@ class _ServiceEnquiryScreenState extends State<ServiceEnquiryScreen> {
               _solarPincodeController.text = addr.zipCode;
               _transPickupAddressController.text = "${addr.addressLine}, ${addr.city}";
               _transPickupPincodeController.text = addr.zipCode;
+              _rePreferredLocationController.text = addr.city;
             });
           }
         }
@@ -119,17 +155,27 @@ class _ServiceEnquiryScreenState extends State<ServiceEnquiryScreen> {
     _transPickupPincodeController.dispose();
     _transDeliveryAddressController.dispose();
     _transDeliveryPincodeController.dispose();
+    _rePreferredLocationController.dispose();
+    _reLandmarkLocalityController.dispose();
+    _webBusinessNameController.dispose();
+    _webExistingWebsiteController.dispose();
+    _webColorPreferenceController.dispose();
+    _webReferenceWebsiteController.dispose();
     super.dispose();
   }
 
   Future<void> _pickImage(String type) async {
     try {
-      final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+      final XFile? image = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 70, maxWidth: 1024);
       if (image != null) {
+        final bytes = await image.readAsBytes();
+        final String base64DataUrl = "data:image/jpeg;base64,${base64Encode(bytes)}";
         setState(() {
-          if (type == 'ebBill') _ebBillFileName = image.name;
-          if (type == 'roofPhoto') _roofPhotoFileName = image.name;
-          if (type == 'invitation') _invitationFileName = image.name;
+          if (type == 'ebBill') _ebBillFileName = base64DataUrl;
+          if (type == 'roofPhoto') _roofPhotoFileName = base64DataUrl;
+          if (type == 'invitation') _invitationFileName = base64DataUrl;
+          if (type == 'realEstateDoc') _reDocumentFileName = base64DataUrl;
+          if (type == 'webReference') _webReferenceFileName = base64DataUrl;
         });
       }
     } catch (e) {
@@ -147,10 +193,17 @@ class _ServiceEnquiryScreenState extends State<ServiceEnquiryScreen> {
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final token = auth.user?.token;
 
+    final String fullName = _fullNameController.text.trim().isNotEmpty
+        ? _fullNameController.text.trim()
+        : (auth.user?.name.isNotEmpty == true ? auth.user!.name : 'Customer');
+    final String mobileNumber = _mobileController.text.trim().isNotEmpty
+        ? _mobileController.text.trim()
+        : (auth.user?.phone.isNotEmpty == true ? auth.user!.phone : '9442136010');
+
     final Map<String, dynamic> payload = {
       'enquiryType': _selectedType,
-      'fullName': _fullNameController.text.trim(),
-      'mobileNumber': _mobileController.text.trim(),
+      'fullName': fullName,
+      'mobileNumber': mobileNumber,
       'whatsappNumber': _whatsappController.text.trim(),
       'email': _emailController.text.trim(),
       'additionalNotes': _notesController.text.trim(),
@@ -200,289 +253,314 @@ class _ServiceEnquiryScreenState extends State<ServiceEnquiryScreen> {
         'pickupDate': _transPickupDate != null ? DateFormat('dd/MM/yyyy').format(_transPickupDate!) : null,
         'deliveryDate': _transDeliveryDate != null ? DateFormat('dd/MM/yyyy').format(_transDeliveryDate!) : null,
       });
+    } else if (_selectedType == 'real-estate') {
+      payload.addAll({
+        'lookingFor': _reLookingFor,
+        'propertyCategory': _rePropertyCategory,
+        'bhkType': _reBhkType,
+        'budgetRange': _reBudgetRange,
+        'areaSqFt': _reAreaSqFt,
+        'preferredLocation': _rePreferredLocationController.text.trim(),
+        'landmarkLocality': _reLandmarkLocalityController.text.trim(),
+        'furnishing': _reFurnishing,
+        'facing': _reFacing,
+        'floorPreference': _reFloorPreference,
+        'propertyAge': _rePropertyAge,
+        'amenities': _reAmenities,
+        'preferredContactTime': _rePreferredContactTime,
+        'propertyDocumentFile': _reDocumentFileName,
+      });
+    } else if (_selectedType == 'website') {
+      payload.addAll({
+        'businessName': _webBusinessNameController.text.trim(),
+        'businessType': _webBusinessType,
+        'industryCategory': _webIndustryCategory,
+        'existingWebsite': _webExistingWebsiteController.text.trim(),
+        'websiteType': _webWebsiteType,
+        'websitePurpose': _webWebsitePurpose,
+        'websiteFeatures': _webWebsiteFeatures,
+        'designPreference': _webDesignPreference,
+        'colorPreference': _webColorPreferenceController.text.trim(),
+        'referenceWebsite': _webReferenceWebsiteController.text.trim(),
+        'contentReady': _webContentReady,
+        'estimatedBudget': _webEstimatedBudget,
+        'requiredTimeframe': _webRequiredTimeframe,
+        'hasDomainHosting': _webHasDomainHosting,
+        'preferredContactTime': _webPreferredContactTime,
+        'websiteReferenceFile': _webReferenceFileName,
+      });
     }
 
     try {
       final response = await ApiService.post('service-enquiries', payload, token: token);
-      if (response.statusCode == 201) {
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
         if (mounted) {
           showDialog(
             context: context,
-            builder: (context) => AlertDialog(
+            barrierDismissible: false,
+            builder: (ctx) => AlertDialog(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               title: Row(
                 children: [
-                  const Icon(Icons.check_circle, color: Color(0xFF10B981), size: 28),
+                  Icon(Icons.check_circle_rounded, color: _themeColor, size: 28),
                   const SizedBox(width: 10),
-                  Text("Enquiry Submitted!", style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+                  const Text("Enquiry Submitted!"),
                 ],
               ),
-              content: Text(
-                "Thank you for reaching out! Our team will contact you shortly regarding your ${_selectedType.toUpperCase()} requirement.",
-                style: GoogleFonts.outfit(fontSize: 14),
-              ),
+              content: const Text("Thank you! Our dedicated service team will review your requirements and reach out to you shortly."),
               actions: [
                 ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF8C00),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
+                  style: ElevatedButton.styleFrom(backgroundColor: _themeColor, foregroundColor: Colors.white),
                   onPressed: () {
-                    Navigator.pop(context); // close dialog
-                    Navigator.pop(context); // close screen
+                    Navigator.of(ctx).pop();
+                    Navigator.of(context).pop();
                   },
-                  child: Text("OK", style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
-                ),
+                  child: const Text("Done"),
+                )
               ],
             ),
           );
         }
       } else {
         if (mounted) {
+          String errMsg = "Failed (${response.statusCode}): ${response.body}";
+          try {
+            final jsonRes = jsonDecode(response.body);
+            if (jsonRes['message'] != null) errMsg = "${jsonRes['message']}";
+          } catch (_) {}
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Failed to submit enquiry. Please try again.")),
+            SnackBar(content: Text(errMsg), backgroundColor: Colors.red[700]),
           );
         }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Connection error: $e")),
+          SnackBar(content: Text("Error submitting enquiry: $e"), backgroundColor: Colors.red[700]),
         );
       }
     } finally {
-      if (mounted) setState(() => _isSubmitting = false);
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
     }
   }
 
   Color get _themeColor {
     switch (_selectedType) {
-      case 'solar': return const Color(0xFFFF8C00); // Orange
-      case 'photography': return const Color(0xFF8B5CF6); // Purple
-      case 'transport': return const Color(0xFF10B981); // Green
-      default: return const Color(0xFFFF8C00);
+      case 'photography':
+        return const Color(0xFF8B5CF6);
+      case 'transport':
+        return const Color(0xFF10B981);
+      case 'real-estate':
+        return const Color(0xFFD97706);
+      case 'website':
+        return const Color(0xFF2563EB);
+      default:
+        return const Color(0xFFFF8C00);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isWeb = MediaQuery.of(context).size.width > 800;
+    final bool isWeb = MediaQuery.of(context).size.width > 768;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF8F5),
+      backgroundColor: isWeb ? const Color(0xFFF3F4F6) : Colors.grey[100],
       appBar: AppBar(
-        backgroundColor: _themeColor,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
         title: Text(
           "Send Your Enquiry",
-          style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
+          style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: Colors.white),
         ),
-        centerTitle: true,
+        backgroundColor: _themeColor,
+        iconTheme: const IconThemeData(color: Colors.white),
+        elevation: 0,
+        centerTitle: isWeb,
       ),
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, viewportConstraints) {
-            return SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: viewportConstraints.maxHeight,
-                ),
-                child: Center(
-                  child: Container(
-                    constraints: BoxConstraints(
-                      maxWidth: isWeb ? 1000 : double.infinity,
-                      minHeight: viewportConstraints.maxHeight,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      boxShadow: isWeb ? [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        )
-                      ] : null,
-                    ),
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: Container(
+          constraints: BoxConstraints(maxWidth: isWeb ? 1000 : double.infinity),
+          child: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(horizontal: isWeb ? 24 : 16, vertical: isWeb ? 28 : 16),
+            child: Column(
+              children: [
+                // Service Category Selection Tabs
+                Center(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // Header Subtitle
-                        Center(
-                          child: Padding(
-                            padding: const EdgeInsets.only(bottom: 16.0),
-                            child: Text(
-                              "✨ Send Your Enquiry – We'll Contact You Soon! ✨",
-                              style: GoogleFonts.outfit(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFF1F2937),
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ),
-
-                        // Service Tabs Selector
-                        Row(
-                          children: [
-                            Expanded(child: _buildServiceTab('solar', 'Solar', Icons.wb_sunny_rounded, const Color(0xFFFF8C00))),
-                            const SizedBox(width: 8),
-                            Expanded(child: _buildServiceTab('photography', 'Photography', Icons.camera_alt_rounded, const Color(0xFF8B5CF6))),
-                            const SizedBox(width: 8),
-                            Expanded(child: _buildServiceTab('transport', 'Transport', Icons.local_shipping_rounded, const Color(0xFF10B981))),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Main Card Form
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: _themeColor.withOpacity(0.3), width: 1.5),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4),
-                              )
-                            ],
-                          ),
-                          child: Form(
-                            key: _formKey,
-                            child: Column(
-                              children: [
-                                // Card Banner Header
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-                                  decoration: BoxDecoration(
-                                    color: _themeColor.withOpacity(0.08),
-                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            _selectedType == 'solar' ? Icons.wb_sunny_rounded :
-                                            _selectedType == 'photography' ? Icons.camera_alt_rounded : Icons.local_shipping_rounded,
-                                            color: _themeColor, size: 28,
-                                          ),
-                                          const SizedBox(width: 10),
-                                          Text(
-                                            _selectedType == 'solar' ? "Solar Enquiry" :
-                                            _selectedType == 'photography' ? "Photography Enquiry" : "Transport Enquiry",
-                                            style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold, color: _themeColor),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        _selectedType == 'solar' ? "Home & Commercial Solar Installation" :
-                                        _selectedType == 'photography' ? "Wedding • Events • Birthday • Corporate & More" :
-                                        "Parcel • Full Load • Mini Truck • Container & More",
-                                        style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey[600]),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-
-                                Padding(
-                                  padding: const EdgeInsets.all(20.0),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      // ── SECTION: Your Details ──
-                                      _buildSectionHeader("Your Details"),
-                                      const SizedBox(height: 12),
-                                      Row(
-                                        children: [
-                                          Expanded(child: _buildTextField("Full Name *", _fullNameController, required: true)),
-                                          const SizedBox(width: 12),
-                                          Expanded(child: _buildTextField("Mobile Number *", _mobileController, isPhone: true, required: true)),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 12),
-                                      Row(
-                                        children: [
-                                          Expanded(child: _buildTextField("WhatsApp Number", _whatsappController, isPhone: true)),
-                                          const SizedBox(width: 12),
-                                          Expanded(child: _buildTextField("Email", _emailController, isEmail: true)),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 20),
-
-                                      // ── TYPE SPECIFIC FIELDS ──
-                                      if (_selectedType == 'solar') _buildSolarForm(),
-                                      if (_selectedType == 'photography') _buildPhotographyForm(),
-                                      if (_selectedType == 'transport') _buildTransportForm(),
-
-                                      const SizedBox(height: 20),
-                                      // ── SECTION: Additional Notes ──
-                                      _buildSectionHeader("Additional Notes"),
-                                      const SizedBox(height: 8),
-                                      TextFormField(
-                                        controller: _notesController,
-                                        maxLines: 3,
-                                        style: GoogleFonts.outfit(fontSize: 13),
-                                        decoration: _inputDecoration("Enter any additional notes..."),
-                                      ),
-                                      const SizedBox(height: 24),
-
-                                      // Submit Button
-                                      SizedBox(
-                                        width: double.infinity,
-                                        height: 52,
-                                        child: ElevatedButton(
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: _themeColor,
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                                            elevation: 2,
-                                          ),
-                                          onPressed: _isSubmitting ? null : _submitEnquiry,
-                                          child: _isSubmitting
-                                              ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
-                                              : Text(
-                                                  "Submit Enquiry",
-                                                  style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-                                                ),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 10),
-                                      Center(
-                                        child: Text(
-                                          _selectedType == 'solar' ? "Our Solar Expert will contact you within 24 hours." :
-                                          _selectedType == 'photography' ? "Our Team will contact you soon." :
-                                          "Our Transport Team will contact you soon.",
-                                          style: GoogleFonts.outfit(fontSize: 11, color: Colors.grey[500], fontStyle: FontStyle.italic),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                        _buildServiceTab('solar', 'Solar', Icons.wb_sunny_rounded, const Color(0xFFFF8C00)),
+                        const SizedBox(width: 8),
+                        _buildServiceTab('photography', 'Photography', Icons.camera_alt_rounded, const Color(0xFF8B5CF6)),
+                        const SizedBox(width: 8),
+                        _buildServiceTab('transport', 'Transport', Icons.local_shipping_rounded, const Color(0xFF10B981)),
+                        const SizedBox(width: 8),
+                        _buildServiceTab('real-estate', 'Real Estate', Icons.home_work_rounded, const Color(0xFFD97706)),
+                        const SizedBox(width: 8),
+                        _buildServiceTab('website', 'Website', Icons.language_rounded, const Color(0xFF2563EB)),
                       ],
                     ),
                   ),
                 ),
+                const SizedBox(height: 20),
+
+                // Form Card
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: _themeColor.withOpacity(0.3), width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.08),
+                        blurRadius: 20,
+                        offset: const Offset(0, 6),
+                      )
+                    ],
+                  ),
+                  child: Form(
+                    key: _formKey,
+                child: Column(
+                  children: [
+                    // Card Banner Header
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                      decoration: BoxDecoration(
+                        color: _themeColor.withOpacity(0.08),
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                _selectedType == 'solar' ? Icons.wb_sunny_rounded :
+                                _selectedType == 'photography' ? Icons.camera_alt_rounded :
+                                _selectedType == 'transport' ? Icons.local_shipping_rounded :
+                                _selectedType == 'real-estate' ? Icons.home_work_rounded : Icons.language_rounded,
+                                color: _themeColor, size: 24,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                _selectedType == 'solar' ? "Solar Solution Enquiry" :
+                                _selectedType == 'photography' ? "Photography & Events Enquiry" :
+                                _selectedType == 'transport' ? "Transport & Logistics Enquiry" :
+                                _selectedType == 'real-estate' ? "Real Estate Enquiry" : "Website & Digital Solution Enquiry",
+                                style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: _themeColor),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _selectedType == 'solar' ? "Home & Commercial Solar Installation" :
+                            _selectedType == 'photography' ? "Wedding • Events • Birthday • Corporate & More" :
+                            _selectedType == 'transport' ? "Parcel • Full Load • Mini Truck • Container & More" :
+                            _selectedType == 'real-estate' ? "Homes • Plots • Commercial Spaces • Buy, Sell & Rent" : "Static, Dynamic, E-Commerce & Custom Web Solutions",
+                            style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey[600]),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // 1. Personal Details
+                          _buildSectionHeader("1. Your Details"),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(child: _buildTextField("Full Name *", _fullNameController, required: true)),
+                              const SizedBox(width: 12),
+                              Expanded(child: _buildTextField("Mobile Number *", _mobileController, isPhone: true, required: true)),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(child: _buildTextField("WhatsApp Number", _whatsappController, isPhone: true)),
+                              const SizedBox(width: 12),
+                              Expanded(child: _buildTextField("Email *", _emailController, isEmail: true, required: _selectedType == 'website')),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Dynamic Form Sections based on Tab
+                          if (_selectedType == 'solar') _buildSolarForm(),
+                          if (_selectedType == 'photography') _buildPhotographyForm(),
+                          if (_selectedType == 'transport') _buildTransportForm(),
+                          if (_selectedType == 'real-estate') _buildRealEstateForm(),
+                          if (_selectedType == 'website') _buildWebsiteForm(),
+
+                          const SizedBox(height: 20),
+
+                          // Additional Notes
+                          Text("Additional Information / Notes", style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey[700])),
+                          const SizedBox(height: 6),
+                          TextFormField(
+                            controller: _notesController,
+                            maxLines: 3,
+                            style: GoogleFonts.outfit(fontSize: 13),
+                            decoration: InputDecoration(
+                              hintText: "Tell us more about your specific requirements, ideas or features...",
+                              hintStyle: GoogleFonts.outfit(fontSize: 12, color: Colors.grey[400]),
+                              filled: true,
+                              fillColor: Colors.grey[50],
+                              contentPadding: const EdgeInsets.all(12),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey[300]!)),
+                              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey[300]!)),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Submit Button
+                          SizedBox(
+                            width: double.infinity,
+                            height: 50,
+                            child: ElevatedButton(
+                              onPressed: _isSubmitting ? null : _submitEnquiry,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: _themeColor,
+                                foregroundColor: Colors.white,
+                                elevation: 4,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              child: _isSubmitting
+                                  ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
+                                  : Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        const Icon(Icons.send_rounded, size: 20),
+                                        const SizedBox(width: 8),
+                                        Text("Submit Enquiry", style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold)),
+                                      ],
+                                    ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            );
-          },
+            ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  ),
+ );
+}
 
   Widget _buildServiceTab(String type, String label, IconData icon, Color color) {
     final isSelected = _selectedType == type;
@@ -490,17 +568,18 @@ class _ServiceEnquiryScreenState extends State<ServiceEnquiryScreen> {
       onTap: () => setState(() => _selectedType = type),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
         decoration: BoxDecoration(
           color: isSelected ? color : Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: isSelected ? color : Colors.grey[300]!, width: 1.5),
           boxShadow: isSelected ? [BoxShadow(color: color.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 3))] : null,
         ),
-        child: Column(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: isSelected ? Colors.white : color, size: 22),
-            const SizedBox(height: 4),
+            Icon(icon, color: isSelected ? Colors.white : color, size: 20),
+            const SizedBox(width: 6),
             Text(
               label,
               style: GoogleFonts.outfit(
@@ -514,84 +593,39 @@ class _ServiceEnquiryScreenState extends State<ServiceEnquiryScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: _themeColor),
-        ),
-        const SizedBox(height: 4),
-        Container(width: 36, height: 2.5, decoration: BoxDecoration(color: _themeColor, borderRadius: BorderRadius.circular(2))),
-      ],
-    );
-  }
-
-  Widget _buildTextField(String label, TextEditingController controller, {bool isPhone = false, bool isEmail = false, bool required = false}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey[700])),
-        const SizedBox(height: 6),
-        TextFormField(
-          controller: controller,
-          keyboardType: isPhone ? TextInputType.phone : (isEmail ? TextInputType.emailAddress : TextInputType.text),
-          style: GoogleFonts.outfit(fontSize: 13),
-          decoration: _inputDecoration("Enter ${label.replaceAll('*', '').trim().toLowerCase()}"),
-          validator: required ? (v) => (v == null || v.trim().isEmpty) ? "Required" : null : null,
-        ),
-      ],
-    );
-  }
-
-  InputDecoration _inputDecoration(String hint) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: GoogleFonts.outfit(color: Colors.grey[400], fontSize: 12),
-      filled: true,
-      fillColor: Colors.grey[50],
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey[300]!)),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: _themeColor, width: 1.5)),
-      errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
-      focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
-    );
-  }
-
   // 1. SOLAR FORM WIDGETS
   Widget _buildSolarForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader("Location"),
+        _buildSectionHeader("2. Location Details"),
         const SizedBox(height: 12),
         Row(
           children: [
             Expanded(child: _buildDropdown("State", _solarState, ['Tamil Nadu', 'Kerala', 'Karnataka', 'Andhra Pradesh'], (v) => setState(() => _solarState = v))),
             const SizedBox(width: 12),
-            Expanded(child: _buildDropdown("District", _solarDistrict, ['Coimbatore', 'Chennai', 'Madurai', 'Sivakasi', 'Salem', 'Trichy'], (v) => setState(() => _solarDistrict = v))),
+            Expanded(child: _buildDropdown("District", _solarDistrict, ['Coimbatore', 'Tirupur', 'Erode', 'Salem', 'Chennai'], (v) => setState(() => _solarDistrict = v))),
           ],
         ),
-        const SizedBox(height: 12),
-        _buildDropdown("City", _solarCity, ['Coimbatore', 'Chennai', 'Madurai', 'Sivakasi', 'Salem', 'Trichy'], (v) => setState(() => _solarCity = v)),
         const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(flex: 2, child: _buildTextField("Full Address", _solarFullAddressController)),
+            Expanded(child: _buildDropdown("City / Town", _solarCity, ['Coimbatore', 'Tirupur', 'Erode', 'Pollachi', 'Udumalpet'], (v) => setState(() => _solarCity = v))),
             const SizedBox(width: 12),
-            Expanded(flex: 1, child: _buildTextField("Pincode", _solarPincodeController, isPhone: true)),
+            Expanded(child: _buildTextField("Pincode *", _solarPincodeController, isPhone: true, required: true)),
           ],
         ),
+        const SizedBox(height: 12),
+        _buildTextField("Full Address *", _solarFullAddressController, required: true),
         const SizedBox(height: 20),
 
-        _buildSectionHeader("Requirement Details"),
+        _buildSectionHeader("3. Requirement Details"),
         const SizedBox(height: 12),
         Row(
           children: [
             Expanded(child: _buildDropdown("Property Type", _solarPropertyType, ['Residential', 'Commercial', 'Industrial', 'Agricultural'], (v) => setState(() => _solarPropertyType = v))),
             const SizedBox(width: 12),
-            Expanded(child: _buildDropdown("Rooftop / Ground", _solarRooftopOrGround, ['Rooftop', 'Ground Mount', 'Both'], (v) => setState(() => _solarRooftopOrGround = v))),
+            Expanded(child: _buildDropdown("Rooftop / Ground", _solarRooftopOrGround, ['Rooftop', 'Ground Mounted'], (v) => setState(() => _solarRooftopOrGround = v))),
           ],
         ),
         const SizedBox(height: 12),
@@ -612,7 +646,7 @@ class _ServiceEnquiryScreenState extends State<ServiceEnquiryScreen> {
         ),
         const SizedBox(height: 20),
 
-        _buildSectionHeader("Upload Documents"),
+        _buildSectionHeader("4. Upload Documents"),
         const SizedBox(height: 10),
         Row(
           children: [
@@ -630,11 +664,11 @@ class _ServiceEnquiryScreenState extends State<ServiceEnquiryScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader("Event Details"),
+        _buildSectionHeader("2. Event Details"),
         const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(child: _buildDropdown("Event Type", _photoEventType, ['Wedding', 'Reception', 'Birthday', 'Corporate', 'Baby Shower', 'Pre/Post Wedding', 'Others'], (v) => setState(() => _photoEventType = v))),
+            Expanded(child: _buildDropdown("Event Type", _photoEventType, ['Wedding', 'Pre-Wedding', 'Birthday', 'Baby Shower', 'Corporate Event', 'Model Shoot'], (v) => setState(() => _photoEventType = v))),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -653,7 +687,7 @@ class _ServiceEnquiryScreenState extends State<ServiceEnquiryScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(_photoEventDate != null ? DateFormat('dd/MM/yyyy').format(_photoEventDate!) : "dd/mm/yyyy", style: GoogleFonts.outfit(fontSize: 12, color: _photoEventDate != null ? Colors.black87 : Colors.grey[400])),
+                          Text(_photoEventDate != null ? DateFormat('dd/MM/yyyy').format(_photoEventDate!) : "Select Date", style: GoogleFonts.outfit(fontSize: 12, color: _photoEventDate != null ? Colors.black87 : Colors.grey[400])),
                           Icon(Icons.calendar_today_rounded, size: 16, color: _themeColor),
                         ],
                       ),
@@ -677,46 +711,31 @@ class _ServiceEnquiryScreenState extends State<ServiceEnquiryScreen> {
           children: [
             Expanded(child: _buildTextField("Venue Name", _photoVenueNameController)),
             const SizedBox(width: 12),
-            Expanded(child: _buildDropdown("City", _photoCity, ['Coimbatore', 'Chennai', 'Madurai', 'Sivakasi', 'Salem', 'Trichy'], (v) => setState(() => _photoCity = v))),
+            Expanded(child: _buildDropdown("City", _photoCity, ['Coimbatore', 'Chennai', 'Bangalore', 'Madurai', 'Trichy'], (v) => setState(() => _photoCity = v))),
           ],
         ),
         const SizedBox(height: 12),
-        _buildTextField("Google Map Location (Link / Name)", _photoMapLocationController),
+        _buildTextField("Google Map Location Link", _photoMapLocationController),
         const SizedBox(height: 20),
 
-        _buildSectionHeader("Services Required"),
-        const SizedBox(height: 10),
+        _buildSectionHeader("3. Services & Budget"),
+        const SizedBox(height: 12),
+        Text("Services Required", style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey[700])),
+        const SizedBox(height: 8),
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: ['Photography', 'Cinematography', 'Drone', 'LED Wall', 'Live Streaming', 'Album', 'Photo Frame', 'Reels', 'Pre Wedding', 'Post Wedding', 'Others'].map((srv) {
-            final isChecked = _photoServicesRequired.contains(srv);
-            return FilterChip(
-              label: Text(srv, style: GoogleFonts.outfit(fontSize: 12, fontWeight: isChecked ? FontWeight.bold : FontWeight.normal, color: isChecked ? Colors.white : Colors.black87)),
-              selected: isChecked,
-              selectedColor: _themeColor,
-              backgroundColor: Colors.grey[100],
-              onSelected: (selected) {
-                setState(() {
-                  if (selected) {
-                    _photoServicesRequired.add(srv);
-                  } else {
-                    _photoServicesRequired.remove(srv);
-                  }
-                });
-              },
-            );
+          children: ['Traditional Photography', 'Candid Photography', 'Traditional Video', 'Cinematography', 'Drone Shoot', 'Album Printing'].map((srv) {
+            return _buildCheckboxOption(srv, _photoServicesRequired);
           }).toList(),
         ),
+        const SizedBox(height: 12),
+        _buildDropdown("Budget Range", _photoBudgetRange, ['Under ₹25,000', '₹25,000 - ₹50,000', '₹50,000 - ₹1,00,000', '₹1,00,000 - ₹2,00,000', '₹2,00,000+'], (v) => setState(() => _photoBudgetRange = v)),
         const SizedBox(height: 20),
 
-        Row(
-          children: [
-            Expanded(child: _buildDropdown("Budget Range", _photoBudgetRange, ['Below ₹25,000', '₹25,000 - ₹50,000', '₹50,000 - ₹1,00,000', '₹1,00,000 - ₹2,00,000', '₹2,00,000+'], (v) => setState(() => _photoBudgetRange = v))),
-            const SizedBox(width: 12),
-            Expanded(child: _buildFileUploadBox("Upload Invitation (Optional)", _invitationFileName, () => _pickImage('invitation'))),
-          ],
-        ),
+        _buildSectionHeader("4. Upload Invitation / Reference"),
+        const SizedBox(height: 10),
+        _buildFileUploadBox("Upload Invitation Card / Sample Image", _invitationFileName, () => _pickImage('invitation')),
       ],
     );
   }
@@ -726,52 +745,50 @@ class _ServiceEnquiryScreenState extends State<ServiceEnquiryScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader("Pickup Details"),
+        _buildSectionHeader("2. Pickup & Delivery Location"),
         const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(flex: 2, child: _buildTextField("Pickup Address *", _transPickupAddressController, required: true)),
+            Expanded(child: _buildTextField("Pickup Address *", _transPickupAddressController, required: true)),
             const SizedBox(width: 12),
-            Expanded(flex: 1, child: _buildTextField("Pickup Pincode *", _transPickupPincodeController, isPhone: true, required: true)),
+            Expanded(child: _buildTextField("Pickup Pincode *", _transPickupPincodeController, isPhone: true, required: true)),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(child: _buildTextField("Delivery Address *", _transDeliveryAddressController, required: true)),
+            const SizedBox(width: 12),
+            Expanded(child: _buildTextField("Delivery Pincode *", _transDeliveryPincodeController, isPhone: true, required: true)),
           ],
         ),
         const SizedBox(height: 20),
 
-        _buildSectionHeader("Delivery Details"),
+        _buildSectionHeader("3. Cargo & Vehicle Details"),
         const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(flex: 2, child: _buildTextField("Delivery Address *", _transDeliveryAddressController, required: true)),
+            Expanded(child: _buildDropdown("Material Type", _transMaterialType, ['Boxes / Parcels', 'Furniture & Household', 'Industrial Goods', 'Perishables', 'Heavy Machinery'], (v) => setState(() => _transMaterialType = v))),
             const SizedBox(width: 12),
-            Expanded(flex: 1, child: _buildTextField("Delivery Pincode *", _transDeliveryPincodeController, isPhone: true, required: true)),
+            Expanded(child: _buildDropdown("Estimated Weight", _transWeight, ['Under 100 kg', '100 - 500 kg', '500 kg - 1 Ton', '1 - 3 Tons', '3 - 10 Tons', '10+ Tons'], (v) => setState(() => _transWeight = v))),
           ],
         ),
+        const SizedBox(height: 12),
+        _buildDropdown("Vehicle Required", _transVehicleRequired, ['Two Wheeler Express', 'Mini Truck (Tata Ace)', 'Pickup (Bolero)', '14ft Truck', '19ft Container', 'Heavy Trailer'], (v) => setState(() => _transVehicleRequired = v)),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(child: _buildRadioOption("Loading Support Required?", _transLoadingRequired, (v) => setState(() => _transLoadingRequired = v))),
+            const SizedBox(width: 12),
+            Expanded(child: _buildRadioOption("Unloading Support Required?", _transUnloadingRequired, (v) => setState(() => _transUnloadingRequired = v))),
+          ],
+        ),
+        const SizedBox(height: 12),
+        _buildRadioOption("Transit Insurance Required?", _transInsuranceRequired, (v) => setState(() => _transInsuranceRequired = v)),
         const SizedBox(height: 20),
 
-        _buildSectionHeader("Material & Vehicle Details"),
+        _buildSectionHeader("4. Schedule"),
         const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(child: _buildDropdown("Material Type", _transMaterialType, ['Boxes / Parcels', 'Industrial Goods', 'Household Goods', 'Agricultural Products', 'Crackers / Fireworks', 'Others'], (v) => setState(() => _transMaterialType = v))),
-            const SizedBox(width: 12),
-            Expanded(child: _buildDropdown("Weight", _transWeight, ['Below 100 kg', '100 - 500 kg', '500 kg - 1 Ton', '1 - 3 Tons', '3 - 10 Tons', '10+ Tons'], (v) => setState(() => _transWeight = v))),
-          ],
-        ),
-        const SizedBox(height: 12),
-        _buildDropdown("Vehicle Required", _transVehicleRequired, ['Mini Truck (Tata Ace)', 'Pickup (Bolero)', 'Medium Truck (Eicher)', 'Large Truck (Container)', 'Any Available'], (v) => setState(() => _transVehicleRequired = v)),
-        const SizedBox(height: 12),
-
-        Row(
-          children: [
-            Expanded(child: _buildRadioOption("Loading Required?", _transLoadingRequired, (v) => setState(() => _transLoadingRequired = v))),
-            const SizedBox(width: 8),
-            Expanded(child: _buildRadioOption("Unloading Required?", _transUnloadingRequired, (v) => setState(() => _transUnloadingRequired = v))),
-            const SizedBox(width: 8),
-            Expanded(child: _buildRadioOption("Insurance Required?", _transInsuranceRequired, (v) => setState(() => _transInsuranceRequired = v))),
-          ],
-        ),
-        const SizedBox(height: 16),
-
         Row(
           children: [
             Expanded(
@@ -833,26 +850,315 @@ class _ServiceEnquiryScreenState extends State<ServiceEnquiryScreen> {
     );
   }
 
-  // HELPER WIDGETS
-  Widget _buildDropdown(String label, String? value, List<String> options, ValueChanged<String?> onChanged) {
+  // 4. REAL ESTATE FORM WIDGETS
+  Widget _buildRealEstateForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey[700])),
+        _buildSectionHeader("2. Requirement Type"),
+        const SizedBox(height: 12),
+        Text("I am looking to *", style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey[700])),
         const SizedBox(height: 6),
-        DropdownButtonFormField<String>(
-          value: value,
-          style: GoogleFonts.outfit(fontSize: 12, color: Colors.black87),
-          isExpanded: true,
-          decoration: _inputDecoration("Select"),
-          items: options.map((opt) => DropdownMenuItem(value: opt, child: Text(opt, overflow: TextOverflow.ellipsis))).toList(),
-          onChanged: onChanged,
+        Row(
+          children: ['Buy', 'Sell', 'Rent', 'Plot'].map((opt) {
+            final isSel = _reLookingFor == opt;
+            return Expanded(
+              child: InkWell(
+                onTap: () => setState(() => _reLookingFor = opt),
+                child: Container(
+                  margin: const EdgeInsets.only(right: 6),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isSel ? _themeColor.withOpacity(0.12) : Colors.grey[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: isSel ? _themeColor : Colors.grey[300]!),
+                  ),
+                  child: Center(
+                    child: Text(opt, style: GoogleFonts.outfit(fontSize: 12, fontWeight: isSel ? FontWeight.bold : FontWeight.w500, color: isSel ? _themeColor : Colors.grey[800])),
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 12),
+        _buildDropdown("Property Category *", _rePropertyCategory, ['Apartment / Flat', 'Independent House / Villa', 'Commercial Shop / Showroom', 'Office Space', 'Plot / Land', 'Agricultural Land'], (v) => setState(() => _rePropertyCategory = v)),
+        const SizedBox(height: 20),
+
+        _buildSectionHeader("3. Property Preference"),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(child: _buildDropdown("BHK / Type", _reBhkType, ['1 BHK', '2 BHK', '3 BHK', '4+ BHK', 'Commercial', 'Land Parcel'], (v) => setState(() => _reBhkType = v))),
+            const SizedBox(width: 12),
+            Expanded(child: _buildDropdown("Budget Range *", _reBudgetRange, ['Under ₹25 Lakhs', '₹25 - 50 Lakhs', '₹50 Lakhs - 1 Crore', '₹1 - 2 Crores', '₹2+ Crores'], (v) => setState(() => _reBudgetRange = v))),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(child: _buildTextField("Preferred Location / City *", _rePreferredLocationController, required: true)),
+            const SizedBox(width: 12),
+            Expanded(child: _buildTextField("Landmark / Locality", _reLandmarkLocalityController)),
+          ],
+        ),
+        const SizedBox(height: 20),
+
+        _buildSectionHeader("4. Additional Preferences"),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(child: _buildDropdown("Furnishing", _reFurnishing, ['Any', 'Fully Furnished', 'Semi Furnished', 'Unfurnished'], (v) => setState(() => _reFurnishing = v))),
+            const SizedBox(width: 12),
+            Expanded(child: _buildDropdown("Facing", _reFacing, ['Any', 'East', 'West', 'North', 'South', 'North-East', 'South-East', 'North-West', 'South-West'], (v) => setState(() => _reFacing = v))),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(child: _buildDropdown("Floor Preference", _reFloorPreference, ['Any', 'Ground Floor', 'Lower Floors', 'Middle Floors', 'Top Floor'], (v) => setState(() => _reFloorPreference = v))),
+            const SizedBox(width: 12),
+            Expanded(child: _buildDropdown("Age of Property", _rePropertyAge, ['Any', 'Under Construction', 'Brand New', '1-5 Years', '5-10 Years', '10+ Years'], (v) => setState(() => _rePropertyAge = v))),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Text("Amenities Required (Select all that apply)", style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey[700])),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: ['Car Parking', 'Lift', 'Power Backup', 'Security', 'Gym', 'Swimming Pool', 'Play Area', 'Garden', 'Club House', 'Others'].map((amen) {
+            return _buildCheckboxOption(amen, _reAmenities);
+          }).toList(),
+        ),
+        const SizedBox(height: 20),
+
+        _buildSectionHeader("5. Contact Preference & Document"),
+        const SizedBox(height: 12),
+        _buildDropdown("Preferred Contact Time", _rePreferredContactTime, ['Any Time', 'Morning (9 AM - 12 PM)', 'Afternoon (12 PM - 4 PM)', 'Evening (4 PM - 8 PM)'], (v) => setState(() => _rePreferredContactTime = v)),
+        const SizedBox(height: 12),
+        _buildFileUploadBox("Upload Property Document / Layout Plan (Optional)", _reDocumentFileName, () => _pickImage('realEstateDoc')),
+      ],
+    );
+  }
+
+  // 5. WEBSITE FORM WIDGETS
+  Widget _buildWebsiteForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader("2. Business & Organization Details"),
+        const SizedBox(height: 12),
+        _buildTextField("Business / Organization Name *", _webBusinessNameController, required: true),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(child: _buildDropdown("Business Type *", _webBusinessType, ['Retail / Shop', 'Service Provider', 'Startup', 'Manufacturer', 'Educational', 'Non-Profit', 'Personal Brand', 'Others'], (v) => setState(() => _webBusinessType = v))),
+            const SizedBox(width: 12),
+            Expanded(child: _buildDropdown("Industry / Category *", _webIndustryCategory, ['E-Commerce', 'Healthcare', 'Education', 'Real Estate', 'Food & Restaurant', 'Technology', 'Finance', 'Travel', 'Manufacturing', 'Entertainment', 'Others'], (v) => setState(() => _webIndustryCategory = v))),
+          ],
+        ),
+        const SizedBox(height: 12),
+        _buildTextField("Existing Website (If any)", _webExistingWebsiteController),
+        const SizedBox(height: 20),
+
+        _buildSectionHeader("3. Website Requirements"),
+        const SizedBox(height: 12),
+        Text("Type of Website *", style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey[700])),
+        const SizedBox(height: 6),
+        Column(
+          children: [
+            'Static Website (Informational)',
+            'Dynamic Website',
+            'E-Commerce Website',
+            'Custom Website / Web Application'
+          ].map((typeOpt) {
+            final isSel = _webWebsiteType == typeOpt;
+            return InkWell(
+              onTap: () => setState(() => _webWebsiteType = typeOpt),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: isSel ? _themeColor.withOpacity(0.08) : Colors.grey[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: isSel ? _themeColor : Colors.grey[300]!),
+                ),
+                child: Row(
+                  children: [
+                    Radio<String>(value: typeOpt, groupValue: _webWebsiteType, onChanged: (v) => setState(() => _webWebsiteType = v!), activeColor: _themeColor),
+                    Text(typeOpt, style: GoogleFonts.outfit(fontSize: 12, fontWeight: isSel ? FontWeight.bold : FontWeight.normal)),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 12),
+        Text("Purpose of Website *", style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey[700])),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: ['Business / Company Profile', 'Online Store / E-Commerce', 'Booking / Appointment', 'Blog / News / Magazine', 'Portfolio / Personal', 'Other'].map((purp) {
+            return _buildCheckboxOption(purp, _webWebsitePurpose);
+          }).toList(),
+        ),
+        const SizedBox(height: 12),
+        Text("Features You Need (Select all that apply)", style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey[700])),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: ['Responsive (Mobile Friendly)', 'Admin Panel', 'Payment Gateway', 'Live Chat / WhatsApp Integration', 'SEO Optimization', 'Product Management', 'Blog / News Section', 'Multi-language', 'Contact / Enquiry Form', 'Other'].map((feat) {
+            return _buildCheckboxOption(feat, _webWebsiteFeatures);
+          }).toList(),
+        ),
+        const SizedBox(height: 20),
+
+        _buildSectionHeader("4. Design & Content Preferences"),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(child: _buildDropdown("Design Preference *", _webDesignPreference, ['Modern & Sleek', 'Minimalist', 'Corporate / Professional', 'Creative & Vibrant', 'Luxury / Premium'], (v) => setState(() => _webDesignPreference = v))),
+            const SizedBox(width: 12),
+            Expanded(child: _buildTextField("Color Preference", _webColorPreferenceController)),
+          ],
+        ),
+        const SizedBox(height: 12),
+        _buildTextField("Reference Website Link (If any)", _webReferenceWebsiteController),
+        const SizedBox(height: 12),
+        Text("Content Ready?", style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey[700])),
+        const SizedBox(height: 6),
+        Row(
+          children: ['Yes', 'No', 'Partial'].map((opt) {
+            final isSel = _webContentReady == opt;
+            return Expanded(
+              child: InkWell(
+                onTap: () => setState(() => _webContentReady = opt),
+                child: Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isSel ? _themeColor.withOpacity(0.12) : Colors.grey[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: isSel ? _themeColor : Colors.grey[300]!),
+                  ),
+                  child: Center(
+                    child: Text(opt, style: GoogleFonts.outfit(fontSize: 12, fontWeight: isSel ? FontWeight.bold : FontWeight.normal, color: isSel ? _themeColor : Colors.grey[800])),
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 20),
+
+        _buildSectionHeader("5. Budget & Timeline"),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(child: _buildDropdown("Estimated Budget *", _webEstimatedBudget, ['Under ₹10,000', '₹10,000 - ₹25,000', '₹25,000 - ₹50,000', '₹50,000 - ₹1,00,000', '₹1,00,000+'], (v) => setState(() => _webEstimatedBudget = v))),
+            const SizedBox(width: 12),
+            Expanded(child: _buildDropdown("Required Timeframe *", _webRequiredTimeframe, ['Urgent (within 1 week)', '2-3 Weeks', '1 Month', '1-3 Months', 'Flexible'], (v) => setState(() => _webRequiredTimeframe = v))),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Text("Do you have Domain & Hosting?", style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey[700])),
+        const SizedBox(height: 6),
+        Row(
+          children: ['Yes', 'No', 'Need Help'].map((opt) {
+            final isSel = _webHasDomainHosting == opt;
+            return Expanded(
+              child: InkWell(
+                onTap: () => setState(() => _webHasDomainHosting = opt),
+                child: Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isSel ? _themeColor.withOpacity(0.12) : Colors.grey[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: isSel ? _themeColor : Colors.grey[300]!),
+                  ),
+                  child: Center(
+                    child: Text(opt, style: GoogleFonts.outfit(fontSize: 12, fontWeight: isSel ? FontWeight.bold : FontWeight.normal, color: isSel ? _themeColor : Colors.grey[800])),
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 12),
+        _buildDropdown("Preferred Contact Time", _webPreferredContactTime, ['Any Time', 'Morning (9 AM - 12 PM)', 'Afternoon (12 PM - 4 PM)', 'Evening (4 PM - 8 PM)'], (v) => setState(() => _webPreferredContactTime = v)),
+        const SizedBox(height: 12),
+        _buildFileUploadBox("Upload Reference / Documents (Optional)", _webReferenceFileName, () => _pickImage('webReference')),
+      ],
+    );
+  }
+
+  // HELPER WIDGETS
+  Widget _buildSectionHeader(String title) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: _themeColor),
+        ),
+        const SizedBox(height: 4),
+        Container(width: 36, height: 2.5, decoration: BoxDecoration(color: _themeColor, borderRadius: BorderRadius.circular(2))),
+      ],
+    );
+  }
+
+  Widget _buildTextField(String label, TextEditingController controller, {bool isPhone = false, bool isEmail = false, bool required = false}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.grey[700]), maxLines: 1, overflow: TextOverflow.ellipsis),
+        const SizedBox(height: 6),
+        TextFormField(
+          controller: controller,
+          keyboardType: isPhone ? TextInputType.phone : (isEmail ? TextInputType.emailAddress : TextInputType.text),
+          validator: required ? (v) => (v == null || v.trim().isEmpty) ? "Required" : null : null,
+          style: GoogleFonts.outfit(fontSize: 12),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.grey[50],
+            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey[300]!)),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey[300]!)),
+            errorStyle: GoogleFonts.outfit(fontSize: 10),
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildTimePicker(String label, TimeOfDay? value, ValueChanged<TimeOfDay> onChanged) {
+  Widget _buildDropdown(String label, String? value, List<String> options, ValueChanged<String?> onChanged) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.grey[700]), maxLines: 1, overflow: TextOverflow.ellipsis),
+        const SizedBox(height: 6),
+        DropdownButtonFormField<String>(
+          isExpanded: true,
+          value: options.contains(value) ? value : options.first,
+          onChanged: onChanged,
+          items: options.map((opt) => DropdownMenuItem(value: opt, child: Text(opt, style: GoogleFonts.outfit(fontSize: 11), overflow: TextOverflow.ellipsis))).toList(),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.grey[50],
+            contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey[300]!)),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey[300]!)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTimePicker(String label, TimeOfDay? value, ValueChanged<TimeOfDay?> onChanged) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -879,7 +1185,12 @@ class _ServiceEnquiryScreenState extends State<ServiceEnquiryScreen> {
     );
   }
 
-  Widget _buildFileUploadBox(String label, String? fileName, VoidCallback onTap) {
+  Widget _buildFileUploadBox(String label, String? fileData, VoidCallback onTap) {
+    final bool isSelected = fileData != null && fileData.isNotEmpty;
+    final String displayTitle = isSelected 
+        ? (fileData.startsWith("data:") ? "Image Attached ✓" : fileData)
+        : "Upload Image / Photo";
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -889,14 +1200,18 @@ class _ServiceEnquiryScreenState extends State<ServiceEnquiryScreen> {
           onTap: onTap,
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
-            decoration: BoxDecoration(color: Colors.grey[50], borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.grey[300]!, style: BorderStyle.solid)),
+            decoration: BoxDecoration(
+              color: isSelected ? _themeColor.withOpacity(0.08) : Colors.grey[50], 
+              borderRadius: BorderRadius.circular(10), 
+              border: Border.all(color: isSelected ? _themeColor : Colors.grey[300]!, style: BorderStyle.solid)
+            ),
             child: Column(
               children: [
-                Icon(Icons.cloud_upload_outlined, color: _themeColor, size: 24),
+                Icon(isSelected ? Icons.check_circle_rounded : Icons.cloud_upload_outlined, color: _themeColor, size: 24),
                 const SizedBox(height: 4),
                 Text(
-                  fileName ?? "Upload Image / PDF",
-                  style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.w600, color: fileName != null ? Colors.black87 : Colors.grey[500]),
+                  displayTitle,
+                  style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.w600, color: isSelected ? _themeColor : Colors.grey[500]),
                   maxLines: 1, overflow: TextOverflow.ellipsis,
                 ),
               ],
@@ -904,6 +1219,41 @@ class _ServiceEnquiryScreenState extends State<ServiceEnquiryScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildCheckboxOption(String label, List<String> selectedList) {
+    final isChecked = selectedList.contains(label);
+    return InkWell(
+      onTap: () {
+        setState(() {
+          if (isChecked) {
+            selectedList.remove(label);
+          } else {
+            selectedList.add(label);
+          }
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: isChecked ? _themeColor.withOpacity(0.1) : Colors.grey[100],
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: isChecked ? _themeColor : Colors.grey[300]!),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isChecked ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+              size: 16,
+              color: isChecked ? _themeColor : Colors.grey[600],
+            ),
+            const SizedBox(width: 6),
+            Text(label, style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.w600, color: isChecked ? _themeColor : Colors.grey[800])),
+          ],
+        ),
+      ),
     );
   }
 
@@ -916,20 +1266,14 @@ class _ServiceEnquiryScreenState extends State<ServiceEnquiryScreen> {
         Row(
           children: ['Yes', 'No'].map((opt) {
             final isSel = selectedVal == opt;
-            return Expanded(
-              child: GestureDetector(
-                onTap: () => onChanged(opt),
-                child: Container(
-                  margin: const EdgeInsets.only(right: 4),
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  decoration: BoxDecoration(
-                    color: isSel ? _themeColor : Colors.grey[100],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Center(
-                    child: Text(opt, style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.bold, color: isSel ? Colors.white : Colors.black87)),
-                  ),
-                ),
+            return InkWell(
+              onTap: () => onChanged(opt),
+              child: Row(
+                children: [
+                  Radio<String>(value: opt, groupValue: selectedVal, onChanged: (v) => onChanged(v!), activeColor: _themeColor),
+                  Text(opt, style: GoogleFonts.outfit(fontSize: 12, fontWeight: isSel ? FontWeight.bold : FontWeight.normal)),
+                  const SizedBox(width: 12),
+                ],
               ),
             );
           }).toList(),
