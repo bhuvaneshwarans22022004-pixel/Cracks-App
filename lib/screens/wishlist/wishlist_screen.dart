@@ -73,7 +73,13 @@ class _WishlistScreenState extends State<WishlistScreen> {
         centerTitle: isWeb,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (_) => const HomeScreen(initialIndex: 0)),
+              (route) => false,
+            );
+          },
         ),
         title: _isSearching
             ? TextField(
@@ -119,7 +125,19 @@ class _WishlistScreenState extends State<WishlistScreen> {
       body: SafeArea(
         child: Center(
           child: Container(
-            constraints: BoxConstraints(maxWidth: isWeb ? 1000 : double.infinity),
+            constraints: BoxConstraints(maxWidth: isWeb ? 650 : double.infinity),
+            decoration: isWeb
+                ? BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.04),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      )
+                    ],
+                  )
+                : null,
             child: wishlist.items.isEmpty
                 ? _buildEmptyState(context)
                 : Column(
@@ -170,7 +188,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
       physics: const AlwaysScrollableScrollPhysics(),
       child: Center(
         child: Container(
-          constraints: BoxConstraints(maxWidth: isWeb ? 1000 : double.infinity),
+          constraints: BoxConstraints(maxWidth: isWeb ? 650 : double.infinity),
           padding: EdgeInsets.symmetric(horizontal: 32, vertical: isWeb ? 80 : 60),
           decoration: isWeb
               ? BoxDecoration(

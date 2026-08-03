@@ -14,15 +14,25 @@ class SettingsScreen extends StatelessWidget {
     final bool isWeb = MediaQuery.of(context).size.width > 768;
 
     return Scaffold(
-      backgroundColor: isWeb ? const Color(0xFFF3F4F6) : null,
+      backgroundColor: isWeb ? const Color(0xFFFAF8F5) : null,
       appBar: AppBar(
         title: const Text("Settings"),
         centerTitle: isWeb,
         elevation: isWeb ? 0 : null,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (_) => const HomeScreen(initialIndex: 0)),
+              (route) => false,
+            );
+          },
+        ),
       ),
       body: Center(
         child: Container(
-          constraints: BoxConstraints(maxWidth: isWeb ? 1000 : double.infinity),
+          constraints: BoxConstraints(maxWidth: isWeb ? 650 : double.infinity),
           decoration: isWeb
               ? BoxDecoration(
                   color: Colors.white,

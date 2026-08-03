@@ -209,16 +209,11 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
-            if (Navigator.canPop(context)) {
-              Navigator.pop(context);
-            } else {
-              // Return to Home Shop Tab
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => const HomeScreen(initialIndex: 0)),
-                (route) => false,
-              );
-            }
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (_) => const HomeScreen(initialIndex: 0)),
+              (route) => false,
+            );
           },
         ),
         title: Text(
@@ -234,7 +229,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
       body: SafeArea(
         child: Center(
           child: Container(
-            constraints: BoxConstraints(maxWidth: isWeb ? 800 : double.infinity),
+            constraints: BoxConstraints(maxWidth: isWeb ? 650 : double.infinity),
             decoration: BoxDecoration(
               color: Colors.white,
               boxShadow: isWeb

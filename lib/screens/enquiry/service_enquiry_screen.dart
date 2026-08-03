@@ -369,7 +369,7 @@ class _ServiceEnquiryScreenState extends State<ServiceEnquiryScreen> {
     final bool isWeb = MediaQuery.of(context).size.width > 768;
 
     return Scaffold(
-      backgroundColor: isWeb ? const Color(0xFFF3F4F6) : Colors.grey[100],
+      backgroundColor: isWeb ? const Color(0xFFFAF8F5) : Colors.grey[100],
       appBar: AppBar(
         title: Text(
           "Send Your Enquiry",
@@ -379,13 +379,34 @@ class _ServiceEnquiryScreenState extends State<ServiceEnquiryScreen> {
         iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
         centerTitle: isWeb,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (_) => const HomeScreen(initialIndex: 0)),
+              (route) => false,
+            );
+          },
+        ),
       ),
-      body: Align(
-        alignment: Alignment.topCenter,
+      body: Center(
         child: Container(
-          constraints: BoxConstraints(maxWidth: isWeb ? 1000 : double.infinity),
+          constraints: BoxConstraints(maxWidth: isWeb ? 650 : double.infinity),
+          decoration: isWeb
+              ? BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    )
+                  ],
+                )
+              : null,
           child: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(horizontal: isWeb ? 24 : 16, vertical: isWeb ? 28 : 16),
+            padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
                 // Service Category Selection Tabs
