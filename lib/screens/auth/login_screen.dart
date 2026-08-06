@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -29,8 +30,37 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _verificationId;
   bool _loading = false;
 
+  Timer? _otpTimer;
+  int _otpSecondsRemaining = 30;
+  bool _canResendOtp = false;
+
+  void _startOtpTimer() {
+    setState(() {
+      _otpSecondsRemaining = 30;
+      _canResendOtp = false;
+    });
+    _otpTimer?.cancel();
+    _otpTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_otpSecondsRemaining == 0) {
+        if (mounted) {
+          setState(() {
+            _canResendOtp = true;
+            _otpTimer?.cancel();
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _otpSecondsRemaining--;
+          });
+        }
+      }
+    });
+  }
+
   @override
   void dispose() {
+    _otpTimer?.cancel();
     _emailController.dispose();
     _passwordController.dispose();
     _phoneController.dispose();
@@ -108,6 +138,7 @@ class _LoginScreenState extends State<LoginScreen> {
             _formMode = AuthFormMode.otp;
             _loading = false;
           });
+          _startOtpTimer();
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("Verification code sent successfully")),
           );
@@ -178,8 +209,20 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } catch (e) {
       if (mounted) {
+        String msg = e.toString();
+        if (msg.contains('code-expired') || msg.contains('session-expired')) {
+          msg = "The verification code has expired. Tap 'Resend OTP' below to get a new code.";
+          setState(() {
+            _canResendOtp = true;
+          });
+        } else if (msg.contains('invalid-verification-code')) {
+          msg = "Invalid verification code. Please check and try again.";
+        }
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Invalid verification code: ${e.toString()}")),
+          SnackBar(
+            content: Text(msg),
+            backgroundColor: const Color(0xFFD45D27),
+          ),
         );
       }
     } finally {
@@ -576,7 +619,32 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 16),
+
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              _canResendOtp ? "Didn't receive code?" : "Resend in ${_otpSecondsRemaining}s",
+              style: TextStyle(color: Colors.white70, fontSize: 13),
+            ),
+            TextButton(
+              onPressed: _canResendOtp && !_loading
+                  ? () {
+                      _sendOTP();
+                    }
+                  : null,
+              child: Text(
+                "Resend OTP",
+                style: TextStyle(
+                  color: _canResendOtp ? const Color(0xFFFF9F1C) : Colors.white38,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
 
         SizedBox(
           width: double.infinity,

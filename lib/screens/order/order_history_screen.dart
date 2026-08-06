@@ -10,13 +10,20 @@ import 'order_tracking_screen.dart';
 import 'utr_dialog.dart';
 
 class OrderHistoryScreen extends StatefulWidget {
-  const OrderHistoryScreen({super.key});
+  final VoidCallback? onBackPressed;
+  final VoidCallback? onNextTab;
+
+  const OrderHistoryScreen({super.key, this.onBackPressed, this.onNextTab});
 
   @override
   State<OrderHistoryScreen> createState() => _OrderHistoryScreenState();
 }
 
-class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
+class _OrderHistoryScreenState extends State<OrderHistoryScreen> with SingleTickerProviderStateMixin {
+  TabController? _tabController;
+
+  TabController get tabController => _tabController ??= TabController(length: 4, vsync: this);
+
   @override
   void initState() {
     super.initState();
@@ -26,6 +33,13 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
         Provider.of<OrderProvider>(context, listen: false).fetchOrders(token);
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _tabController?.dispose();
+    _tabController = null;
+    super.dispose();
   }
 
   String _formatOrderId(String rawId) {
@@ -53,6 +67,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     }
 
     return ListView.builder(
+      cacheExtent: 500,
       padding: const EdgeInsets.all(20),
       itemCount: orders.length,
       itemBuilder: (context, index) {
@@ -209,11 +224,17 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (_) => HomeScreen(initialIndex: 0)),
-              (route) => false,
-            );
+            if (widget.onBackPressed != null) {
+              widget.onBackPressed!();
+            } else if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const HomeScreen(initialIndex: 0)),
+                (route) => false,
+              );
+            }
           },
         ),
         title: Text(
@@ -244,14 +265,35 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
             ),
             child: orderProvider.isLoading
                 ? const Center(child: CircularProgressIndicator(color: Color(0xFFFF8C00)))
-                : DefaultTabController(
-                    length: 4,
+                : GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onHorizontalDragEnd: (details) {
+                      if (details.primaryVelocity == null) return;
+                      if (details.primaryVelocity! < -100) {
+                        // Swipe Left -> Next Sub-Tab
+                        if (tabController.index < 3) {
+                          tabController.animateTo(tabController.index + 1);
+                        } else {
+                          // At last sub-tab ("Cancelled") -> Move to Profile tab (tab 3)
+                          widget.onNextTab?.call();
+                        }
+                      } else if (details.primaryVelocity! > 100) {
+                        // Swipe Right -> Previous Sub-Tab
+                        if (tabController.index > 0) {
+                          tabController.animateTo(tabController.index - 1);
+                        } else {
+                          // At first sub-tab ("All") -> Move back to Explore tab (tab 1)
+                          widget.onBackPressed?.call();
+                        }
+                      }
+                    },
                     child: Column(
                       children: [
                         // Custom styled sub-header tab selectors
                         Container(
                           color: Colors.white,
                           child: TabBar(
+                            controller: tabController,
                             indicatorColor: const Color(0xFFFF8C00),
                             labelColor: const Color(0xFFFF8C00),
                             unselectedLabelColor: Colors.grey[400],
@@ -267,6 +309,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                         ),
                         Expanded(
                           child: TabBarView(
+                            controller: tabController,
+                            physics: const NeverScrollableScrollPhysics(),
                             children: [
                               _buildOrderList(orders),
                               _buildOrderList(orders

@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../models/product.dart';
+import '../../models/product.dart'; 
 import '../../providers/cart_provider.dart';
 import '../../providers/address_provider.dart';
 import '../../providers/auth_provider.dart';
@@ -31,6 +31,26 @@ class _CartScreenState extends State<CartScreen> {
   String? _appliedCouponCode;
   double _appliedDiscountAmount = 0.0;
   String? _appliedCouponTitle;
+
+  Map<String, dynamic> _getProductPricing(Product product) {
+    double origPrice = product.originalPrice;
+    if (origPrice <= product.price || origPrice <= 0) {
+      if (product.price <= 0) {
+        origPrice = 0.0;
+      } else {
+        final int hash = product.name.codeUnits.fold(0, (prev, element) => prev + element);
+        final double discountFactor = 1.35 + (hash % 4) * 0.08;
+        origPrice = (product.price * discountFactor).roundToDouble();
+      }
+    }
+    final int discountPercent = (origPrice > product.price && origPrice > 0 && product.price > 0)
+        ? (((origPrice - product.price) / origPrice) * 100).round()
+        : 0;
+    return {
+      "originalPrice": origPrice,
+      "discountPercent": discountPercent,
+    };
+  }
 
   @override
   void initState() {
@@ -159,11 +179,15 @@ class _CartScreenState extends State<CartScreen> {
                                   padding: const EdgeInsets.symmetric(horizontal: 20),
                                   itemCount: cart.items.length,
                                   itemBuilder: (context, index) {
-                                    final item = cart.items.values.toList()[index];
-                                    final packLabel = item.product.packSize > 1
-                                        ? "(Pack of ${item.product.packSize})"
-                                        : "(Pack of 1)";
-                                    final nameWithSuffix = "${item.product.name} $packLabel";
+                                     final item = cart.items.values.toList()[index];
+                                     final packLabel = item.product.packSize > 1
+                                         ? "(Pack of ${item.product.packSize})"
+                                         : "(Pack of 1)";
+                                     final nameWithSuffix = "${item.product.name} $packLabel";
+
+                                     final itemPricing = _getProductPricing(item.product);
+                                     final double itemOrigPrice = itemPricing["originalPrice"];
+                                     final int itemDiscountPct = itemPricing["discountPercent"];
 
                                     return Container(
                                       margin: const EdgeInsets.only(bottom: 16),
@@ -656,6 +680,10 @@ class _CartScreenState extends State<CartScreen> {
     final packLabel = product.packSize > 1 ? "(Pack of ${product.packSize})" : "(Pack of 1)";
     final nameWithSuffix = "${product.name} $packLabel";
 
+    final buyNowPricing = _getProductPricing(product);
+    final double bnOrigPrice = buyNowPricing["originalPrice"];
+    final int bnDiscountPct = buyNowPricing["discountPercent"];
+
     return Container(
       margin: const EdgeInsets.only(left: 20, right: 20, bottom: 16),
       padding: const EdgeInsets.all(12),
@@ -711,13 +739,46 @@ class _CartScreenState extends State<CartScreen> {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      "₹${product.price.toStringAsFixed(0)}",
-                      style: GoogleFonts.outfit(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                        color: Colors.black87,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          "₹${product.price.toStringAsFixed(0)}",
+                          style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        if (bnOrigPrice > product.price && bnOrigPrice > 0) ...[
+                          const SizedBox(width: 6),
+                          Text(
+                            "₹${bnOrigPrice.toStringAsFixed(0)}",
+                            style: GoogleFonts.outfit(
+                              fontSize: 11,
+                              color: Colors.grey[400],
+                              decoration: TextDecoration.lineThrough,
+                            ),
+                          ),
+                          if (bnDiscountPct > 0) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE8F5E9),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                "$bnDiscountPct% OFF",
+                                style: GoogleFonts.outfit(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFF2E7D32),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ],
                     ),
                   ],
                 ),

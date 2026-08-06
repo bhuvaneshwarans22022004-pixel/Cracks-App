@@ -14,10 +14,30 @@ class ProductCard extends StatelessWidget {
 
   const ProductCard({super.key, required this.product});
 
+  Map<String, dynamic> _getPricing(Product product) {
+    if (product.price <= 0) {
+      return {"originalPrice": 0.0, "discountPercent": 0};
+    }
+    if (product.originalPrice > product.price) {
+      final double orig = product.originalPrice;
+      final int pct = (((orig - product.price) / orig) * 100).round();
+      return {"originalPrice": orig, "discountPercent": pct};
+    }
+    final int hash = product.name.codeUnits.fold(0, (prev, element) => prev + element);
+    final double discountFactor = 1.35 + (hash % 4) * 0.08;
+    final double orig = (product.price * discountFactor).roundToDouble();
+    final int pct = orig > 0 ? (((orig - product.price) / orig) * 100).round() : 0;
+    return {"originalPrice": orig, "discountPercent": pct};
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool isOutOfStock = product.countInStock <= 0;
     final bool isLowStock = product.countInStock > 0 && product.countInStock <= 5;
+
+    final pricing = _getPricing(product);
+    final double originalPrice = pricing["originalPrice"];
+    final int discountPercent = pricing["discountPercent"];
 
     Widget cardContent = Card(
       clipBehavior: Clip.antiAlias,
@@ -190,10 +210,10 @@ class ProductCard extends StatelessWidget {
                                   color: isOutOfStock ? Colors.grey : Colors.black,
                                 ),
                               ),
-                              if (product.originalPrice > product.price && product.originalPrice > 0 && product.price > 0) ...[
+                              if (originalPrice > product.price && originalPrice > 0) ...[
                                 const SizedBox(width: 4),
                                 Text(
-                                  "₹${product.originalPrice.toStringAsFixed(0)}",
+                                  "₹${originalPrice.toStringAsFixed(0)}",
                                   style: GoogleFonts.outfit(
                                     decoration: TextDecoration.lineThrough,
                                     fontSize: 9,
@@ -203,10 +223,10 @@ class ProductCard extends StatelessWidget {
                               ],
                             ],
                           ),
-                          if (product.originalPrice > product.price && product.originalPrice > 0 && product.price > 0) ...[
+                          if (originalPrice > product.price && discountPercent > 0) ...[
                             const SizedBox(height: 2),
                             Text(
-                              "${((product.originalPrice - product.price) / product.originalPrice * 100).round()}% OFF",
+                              "$discountPercent% OFF",
                               style: GoogleFonts.outfit(
                                 fontSize: 9,
                                 fontWeight: FontWeight.bold,
