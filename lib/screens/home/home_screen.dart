@@ -1464,54 +1464,73 @@ class _HomeScreenState extends State<HomeScreen> {
         _setSelectedIndex(1);
         _setSelectedExploreCategory(filterCategory);
       },
-      child: Column(
-        children: [
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                margin: const EdgeInsets.symmetric(horizontal: 10),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [color.withOpacity(0.15), color.withOpacity(0.02)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+      child: Container(
+        width: 76,
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.topCenter,
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [color.withOpacity(0.15), color.withOpacity(0.02)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: color.withOpacity(0.25)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: color.withOpacity(0.04),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      )
+                    ],
                   ),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: color.withOpacity(0.25)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.withOpacity(0.04),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    )
-                  ],
+                  child: Icon(icon, color: color, size: 22),
                 ),
-                child: Icon(icon, color: color, size: 24),
+                if (badgeText.isNotEmpty)
+                  Positioned(
+                    top: -2,
+                    right: 2,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        badgeText,
+                        style: const TextStyle(color: Colors.white, fontSize: 7, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            SizedBox(
+              height: 28,
+              child: Text(
+                name,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.outfit(
+                  fontSize: 9.5,
+                  height: 1.1,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
               ),
-              if (badgeText.isNotEmpty)
-                Positioned(
-                  top: -2,
-                  right: 4,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      badgeText,
-                      style: const TextStyle(color: Colors.white, fontSize: 7, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(name, style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.black87)),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1544,7 +1563,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return SizedBox(
-      height: 96,
+      height: 102,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
