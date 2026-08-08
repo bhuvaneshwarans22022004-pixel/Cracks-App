@@ -9,6 +9,7 @@ import '../../providers/address_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
 import '../../widgets/guest_auth_prompt.dart';
+import '../../utils/minimum_order_helper.dart';
 import 'address_screen.dart';
 import 'payment_screen.dart';
 
@@ -1372,6 +1373,10 @@ class _CartScreenState extends State<CartScreen> {
               final auth = Provider.of<AuthProvider>(context, listen: false);
               if (auth.isGuest) {
                 showGuestAuthPrompt(context, "Please log in or register to place your order.");
+                return;
+              }
+              // Validate ₹4,500 minimum order requirement
+              if (!MinimumOrderHelper.validateAndShowNotice(context, totalMrp)) {
                 return;
               }
               if (selectedAddress == null) {

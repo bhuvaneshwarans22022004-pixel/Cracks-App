@@ -1,5 +1,5 @@
 class AppConstants {
-  static String baseUrl = 'https://festivekart-backend-734262498360.asia-south1.run.app'; // Use 10.0.2.2 for Android Emulator
+  static String baseUrl = 'https://backend.festivekart.in';
   static const String appName = 'FestiveKart';
   
   // Payment credentials

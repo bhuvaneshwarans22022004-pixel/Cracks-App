@@ -12,6 +12,7 @@ import '../../providers/wishlist_provider.dart';
 import '../../providers/banner_provider.dart';
 import '../../providers/address_provider.dart';
 import '../../providers/order_provider.dart';
+import '../../providers/cms_provider.dart';
 import '../../services/api_service.dart';
 import '../../services/storage_service.dart';
 import '../../widgets/product_card.dart';
@@ -23,6 +24,8 @@ import '../wishlist/wishlist_screen.dart';
 import '../order/order_history_screen.dart';
 import '../notifications/notification_screen.dart';
 import '../settings/settings_screen.dart';
+import '../../widgets/quick_order_sheet.dart';
+import '../../widgets/web_footer.dart';
 import '../../services/update_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../models/product.dart';
@@ -58,6 +61,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String _selectedExploreCategory = "";
   String _currentLocation = "Select Location";
   bool _hasCustomLocation = false;
+  bool _quickOrderEnabled = true;
 
   late PageController _pageController;
   PageController _tabSwipePageController = PageController();
@@ -77,12 +81,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Load saved settings from last session
     _loadSavedValues();
+    _fetchQuickOrderSetting();
 
     Future.delayed(Duration.zero, () {
       if (!mounted) return;
       UpdateService.checkForUpdate(context);
       Provider.of<ProductProvider>(context, listen: false).fetchProducts();
       Provider.of<BannerProvider>(context, listen: false).fetchBanners();
+      Provider.of<CmsProvider>(context, listen: false).fetchContent();
       final auth = Provider.of<AuthProvider>(context, listen: false);
       if (auth.user != null && auth.user!.token != null) {
         Provider.of<OrderProvider>(context, listen: false).fetchOrders(auth.user!.token!);
@@ -143,6 +149,25 @@ class _HomeScreenState extends State<HomeScreen> {
           _hasCustomLocation = true;
         }
       });
+    }
+  }
+
+  Future<void> _fetchQuickOrderSetting() async {
+    try {
+      final res = await ApiService.get('payment-settings');
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        if (data['success'] == true && data['settings'] != null) {
+          final settings = data['settings'];
+          if (mounted) {
+            setState(() {
+              _quickOrderEnabled = settings['quickOrderEnabled'] ?? true;
+            });
+          }
+        }
+      }
+    } catch (e) {
+      print("Error fetching quick order settings: $e");
     }
   }
 
@@ -987,31 +1012,80 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
 
-                  // 2. Rounded Search Input
+                  // 2. Rounded Search Input with Quick Order Button
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: GestureDetector(
-                      onTap: () {
-                        _setSelectedIndex(1);
-                        _setSelectedExploreCategory("All");
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.grey[200]!),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.search_rounded, color: Color(0xFFFF8C00)),
-                            const SizedBox(width: 12),
-                            Text(
-                              "Search for crackers, gifts...",
-                              style: GoogleFonts.outfit(color: Colors.grey[500], fontSize: 13),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.grey[200]!),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () {
+                                _setSelectedIndex(1);
+                                _setSelectedExploreCategory("All");
+                              },
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.search_rounded, color: Color(0xFFFF8C00)),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      "Search for crackers, gifts...",
+                                      style: GoogleFonts.outfit(color: Colors.grey[500], fontSize: 13),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          if (_quickOrderEnabled) ...[
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: () {
+                                QuickOrderSheet.show(context);
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFFE53935), Color(0xFFFF5252)],
+                                  ),
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.red.withOpacity(0.3),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    )
+                                  ],
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.flash_on_rounded, color: Colors.white, size: 13),
+                                    const SizedBox(width: 3),
+                                    Text(
+                                      "Quick order",
+                                      style: GoogleFonts.outfit(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 11.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ],
-                        ),
+                        ],
                       ),
                     ),
                   ),
@@ -1336,115 +1410,27 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                   ),
 
-                  // 8. Customer reviews
-                  Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text("What Families Say", style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 15),
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: [
-                              _reviewCard("Rajesh S.", "The sparklers were completely smoke-free! Kids had great fun. Safely packed."),
-                              const SizedBox(width: 12),
-                              _reviewCard("Priya P.", "Corporate gift boxes were a big hit. Unbelievable bulk price discount."),
-                              const SizedBox(width: 12),
-                              _reviewCard("Ankit V.", "Live customer support resolved a routing address delay instantly. Amazing."),
-                            ],
+                  // Web Only Footer vs Mobile App minimal footer
+                  if (isWeb)
+                    WebFooter(
+                      onNavigateTab: (idx) {
+                        _setSelectedIndex(idx);
+                      },
+                      onOpenContact: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const WholesaleEnquiryScreen(),
                           ),
-                        ),
-                      ],
+                        );
+                      },
+                    )
+                  else
+                    Container(
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.all(20),
+                      child: const Text("© 2026 FestiveKart. All Rights Reserved.", style: TextStyle(color: Colors.grey, fontSize: 10)),
                     ),
-                  ),
-
-                  // 9. Newsletter
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF1E0D08), Color(0xFF3B1E13)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.15), width: 1.5),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.stars_rounded, color: Color(0xFFFFD700), size: 22),
-                            const SizedBox(width: 8),
-                            Text(
-                              "Join the Festive VIP Club",
-                              style: GoogleFonts.playfairDisplay(color: const Color(0xFFFFD700), fontSize: 18, fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          "Subscribe for safety alerts, diwali coupons and B2B factory deals.",
-                          style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.4),
-                        ),
-                        const SizedBox(height: 20),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextField(
-                                style: const TextStyle(color: Colors.white, fontSize: 13),
-                                decoration: InputDecoration(
-                                  hintText: "Enter email address",
-                                  hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
-                                  filled: true,
-                                  fillColor: Colors.white.withOpacity(0.06),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(color: Colors.white.withOpacity(0.15)),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(color: Colors.white.withOpacity(0.15)),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: const BorderSide(color: Color(0xFFFF8C00), width: 1.5),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            ElevatedButton(
-                              onPressed: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text("Subscribed! Thank you.")),
-                                );
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFFF8C00),
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                              child: Text("Subscribe", style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Footer
-                  Container(
-                    alignment: Alignment.center,
-                    padding: const EdgeInsets.all(20),
-                    child: const Text("© 2026 FestiveKart. All Rights Reserved.", style: TextStyle(color: Colors.grey, fontSize: 10)),
-                  ),
                 ],
               ),
             ),
@@ -1641,60 +1627,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 Text(desc, style: const TextStyle(color: Colors.grey, fontSize: 10, height: 1.3)),
               ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _reviewCard(String name, String review) {
-    return Container(
-      width: 250,
-      padding: const EdgeInsets.all(16),
-      margin: const EdgeInsets.only(right: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFFF8C00).withOpacity(0.08)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.01),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          )
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: List.generate(5, (index) => const Icon(Icons.star_rounded, color: Color(0xFFFFD700), size: 14)),
-              ),
-              const Icon(Icons.format_quote_rounded, color: Color(0xFFFF8C00), size: 16),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            review,
-            style: const TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: Colors.black54, height: 1.4),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              CircleAvatar(
-                backgroundColor: const Color(0xFFFF8C00).withOpacity(0.1),
-                radius: 12,
-                child: Text(
-                  name.substring(0, 1),
-                  style: const TextStyle(color: Color(0xFFFF8C00), fontSize: 10, fontWeight: FontWeight.bold),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(name, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.black87)),
-            ],
           ),
         ],
       ),

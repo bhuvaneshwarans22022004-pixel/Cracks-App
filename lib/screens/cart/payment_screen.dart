@@ -12,6 +12,7 @@ import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
 import 'order_placed_screen.dart';
 import '../../utils/constants.dart';
+import '../../utils/minimum_order_helper.dart';
 
 class PaymentScreen extends StatefulWidget {
   final Address selectedAddress;
@@ -314,6 +315,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
                               onPressed: orderProvider.isLoading
                                   ? null
                                   : () async {
+                                      if (!MinimumOrderHelper.validateAndShowNotice(context, widget.totalMrp)) {
+                                        return;
+                                      }
                                       if (_selectedMethod == null) {
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           const SnackBar(

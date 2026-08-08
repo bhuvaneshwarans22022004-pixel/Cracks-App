@@ -13,13 +13,8 @@ class RemoteConfigService {
   bool get isInitialized => _isInitialized;
 
   Future<void> initialize() async {
-    if (kIsWeb) {
-      _isInitialized = true;
-      log('Remote Config initialized (bypassed on Web).');
-      return;
-    }
     try {
-      // 1. Initialize Firebase using pure Dart options to support all platforms without google-services.json
+      // 1. Ensure Firebase is initialized
       bool isInitialized = false;
       try {
         isInitialized = Firebase.apps.isNotEmpty;
@@ -46,25 +41,25 @@ class RemoteConfigService {
       // 2. Set Remote Config configuration
       await remoteConfig.setConfigSettings(RemoteConfigSettings(
         fetchTimeout: const Duration(seconds: 10),
-        minimumFetchInterval: const Duration(minutes: 5), // Fetch more frequently in dev/production
+        minimumFetchInterval: const Duration(seconds: 0), // Enable instant fetch
       ));
 
       // 3. Set local fallback defaults
       await remoteConfig.setDefaults(<String, dynamic>{
-        'base_url': 'https://festivekart-backend-734262498360.asia-south1.run.app',
-        'upi_id': '9361505658@ybl',
-        'gpay_number': '9361505658',
+        'base_url': AppConstants.baseUrl,
+        'upi_id': AppConstants.upiId,
+        'gpay_number': AppConstants.gpayNumber,
       });
 
       // 4. Fetch from Firebase and activate
       bool activated = await remoteConfig.fetchAndActivate();
-      log('Remote Config activated successfully. Changes fetched: $activated');
+      log('Remote Config activated. Dynamic fetch result: $activated');
 
       // 5. Update runtime constants
       _updateConstants(remoteConfig);
       _isInitialized = true;
 
-      // 6. Listen for real-time Remote Config updates (mobile only)
+      // 6. Listen for real-time Remote Config updates
       if (!kIsWeb) {
         remoteConfig.onConfigUpdated.listen((event) async {
           try {
@@ -77,8 +72,7 @@ class RemoteConfigService {
         });
       }
     } catch (e) {
-      log('Error initializing Firebase Remote Config: $e. Falling back to offline defaults.');
-      // Fallback is automatically handled since AppConstants already has correct default values
+      log('Error initializing Firebase Remote Config: $e. Using offline defaults.');
     }
   }
 

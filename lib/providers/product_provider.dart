@@ -10,6 +10,16 @@ class ProductProvider with ChangeNotifier {
   List<Product> get products => _products;
   bool get isLoading => _isLoading;
 
+  List<String> get categories {
+    final set = <String>{};
+    for (var p in _products) {
+      if (p.category.isNotEmpty) {
+        set.add(p.category);
+      }
+    }
+    return set.toList();
+  }
+
   Future<void> fetchProducts() async {
     _isLoading = true;
     notifyListeners();

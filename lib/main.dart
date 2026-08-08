@@ -16,6 +16,7 @@ import 'screens/auth/login_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/splash/splash_screen.dart';
 import 'utils/theme.dart';
+import 'utils/app_scroll_behavior.dart';
 import 'services/remote_config_service.dart';
 
 void main() async {
@@ -90,6 +91,7 @@ class FestiveKartApp extends StatelessWidget {
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+          scrollBehavior: AppScrollBehavior(),
           home: const AuthWrapper(),
         );
       },
