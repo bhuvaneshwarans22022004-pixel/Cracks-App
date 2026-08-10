@@ -13,10 +13,15 @@ class QuickOrderSheet extends StatefulWidget {
   const QuickOrderSheet({super.key});
 
   static void show(BuildContext context) {
+    final isWeb = MediaQuery.of(context).size.width > 800;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: false,
       backgroundColor: Colors.transparent,
+      constraints: BoxConstraints(
+        maxWidth: isWeb ? 1100 : double.infinity,
+      ),
       builder: (context) => const QuickOrderSheet(),
     );
   }
@@ -35,6 +40,132 @@ class _QuickOrderSheetState extends State<QuickOrderSheet> {
   void dispose() {
     _categoryScrollController.dispose();
     super.dispose();
+  }
+
+  Widget _buildProductRow(Product product) {
+    final currentQty = _selectedQuantities[product.id] ?? 0;
+
+    return Row(
+      children: [
+        // Product Image Thumbnail
+        ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            width: 52,
+            height: 52,
+            color: Colors.grey[100],
+            child: CachedNetworkImage(
+              imageUrl: product.image,
+              fit: BoxFit.contain,
+              errorWidget: (c, u, e) => const Icon(Icons.celebration, color: Color(0xFFFF9F1C), size: 24),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+
+        // Title & Pricing
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                product.name,
+                style: GoogleFonts.outfit(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: Colors.black87,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (product.tamilName.isNotEmpty)
+                Text(
+                  product.tamilName,
+                  style: GoogleFonts.outfit(fontSize: 11, color: Colors.grey[500]),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              const SizedBox(height: 2),
+              Row(
+                children: [
+                  Text(
+                    "₹${product.price.toStringAsFixed(0)}",
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFFFF8C00),
+                      fontSize: 14,
+                    ),
+                  ),
+                  if (product.originalPrice > product.price) ...[
+                    const SizedBox(width: 6),
+                    Text(
+                      "₹${product.originalPrice.toStringAsFixed(0)}",
+                      style: GoogleFonts.outfit(
+                        color: Colors.grey[400],
+                        fontSize: 11,
+                        decoration: TextDecoration.lineThrough,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ),
+
+        // Quantity Selector Box
+        Container(
+          height: 38,
+          decoration: BoxDecoration(
+            color: currentQty > 0 ? const Color(0xFFFFF7ED) : Colors.grey[50],
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: currentQty > 0 ? const Color(0xFFFF9F1C) : Colors.grey[300]!,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                icon: Icon(Icons.remove, size: 16, color: currentQty > 0 ? const Color(0xFFFF8C00) : Colors.grey[400]),
+                onPressed: () {
+                  if (currentQty > 0) {
+                    setState(() {
+                      _selectedQuantities[product.id] = currentQty - 1;
+                    });
+                  }
+                },
+              ),
+              Container(
+                constraints: const BoxConstraints(minWidth: 24),
+                alignment: Alignment.center,
+                child: Text(
+                  "$currentQty",
+                  style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: currentQty > 0 ? const Color(0xFFFF8C00) : Colors.black87,
+                  ),
+                ),
+              ),
+              IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                icon: const Icon(Icons.add, size: 16, color: Color(0xFFFF8C00)),
+                onPressed: () {
+                  setState(() {
+                    _selectedQuantities[product.id] = currentQty + 1;
+                  });
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -81,20 +212,24 @@ class _QuickOrderSheetState extends State<QuickOrderSheet> {
       }
     });
 
+    final topPadding = MediaQuery.of(context).padding.top;
+
+    final isWeb = MediaQuery.of(context).size.width > 800;
+
     return Container(
-      height: MediaQuery.of(context).size.height * 0.88,
+      height: MediaQuery.of(context).size.height,
       decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
         children: [
           // 1. Drag Handle & Header
           Container(
-            padding: const EdgeInsets.fromLTRB(20, 12, 16, 12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1E0A35),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            padding: EdgeInsets.fromLTRB(20, topPadding > 0 ? topPadding + 10 : 16, 16, 14),
+            decoration: const BoxDecoration(
+              color: Color(0xFF1E0A35),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
             ),
             child: Column(
               children: [
@@ -279,7 +414,7 @@ class _QuickOrderSheetState extends State<QuickOrderSheet> {
             ),
           ),
 
-          // 3. Product Catalog Table List
+          // 3. Product Catalog Table List (Grid on Web Desktop, List on Mobile)
           Expanded(
             child: filteredProducts.isEmpty
                 ? Center(
@@ -288,134 +423,30 @@ class _QuickOrderSheetState extends State<QuickOrderSheet> {
                       style: GoogleFonts.outfit(color: Colors.grey[500], fontSize: 14),
                     ),
                   )
-                : ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: filteredProducts.length,
-                    separatorBuilder: (context, index) => const Divider(height: 16),
-                    itemBuilder: (context, index) {
-                      final product = filteredProducts[index];
-                      final currentQty = _selectedQuantities[product.id] ?? 0;
-
-                      return Row(
-                        children: [
-                          // Product Image Thumbnail
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: Container(
-                              width: 52,
-                              height: 52,
-                              color: Colors.grey[100],
-                              child: CachedNetworkImage(
-                                imageUrl: product.image,
-                                fit: BoxFit.contain,
-                                errorWidget: (c, u, e) => const Icon(Icons.celebration, color: Color(0xFFFF9F1C), size: 24),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-
-                          // Title & Pricing
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  product.name,
-                                  style: GoogleFonts.outfit(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                    color: Colors.black87,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                if (product.tamilName.isNotEmpty)
-                                  Text(
-                                    product.tamilName,
-                                    style: GoogleFonts.outfit(fontSize: 11, color: Colors.grey[500]),
-                                    maxLines: 1,
-                                  ),
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    Text(
-                                      "₹${product.price.toStringAsFixed(0)}",
-                                      style: GoogleFonts.outfit(
-                                        fontWeight: FontWeight.bold,
-                                        color: const Color(0xFFFF8C00),
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                    if (product.originalPrice > product.price) ...[
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        "₹${product.originalPrice.toStringAsFixed(0)}",
-                                        style: GoogleFonts.outfit(
-                                          color: Colors.grey[400],
-                                          fontSize: 11,
-                                          decoration: TextDecoration.lineThrough,
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Quantity Selector Box
-                          Container(
-                            height: 38,
-                            decoration: BoxDecoration(
-                              color: currentQty > 0 ? const Color(0xFFFFF7ED) : Colors.grey[50],
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: currentQty > 0 ? const Color(0xFFFF9F1C) : Colors.grey[300]!,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                IconButton(
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                                  icon: Icon(Icons.remove, size: 16, color: currentQty > 0 ? const Color(0xFFFF8C00) : Colors.grey[400]),
-                                  onPressed: () {
-                                    if (currentQty > 0) {
-                                      setState(() {
-                                        _selectedQuantities[product.id] = currentQty - 1;
-                                      });
-                                    }
-                                  },
-                                ),
-                                Container(
-                                  constraints: const BoxConstraints(minWidth: 24),
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    "$currentQty",
-                                    style: GoogleFonts.outfit(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                      color: currentQty > 0 ? const Color(0xFFFF8C00) : Colors.black87,
-                                    ),
-                                  ),
-                                ),
-                                IconButton(
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                                  icon: const Icon(Icons.add, size: 16, color: Color(0xFFFF8C00)),
-                                  onPressed: () {
-                                    setState(() {
-                                      _selectedQuantities[product.id] = currentQty + 1;
-                                    });
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
+                : isWeb
+                    ? GridView.builder(
+                        padding: const EdgeInsets.all(20),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          mainAxisExtent: 72,
+                          crossAxisSpacing: 24,
+                          mainAxisSpacing: 14,
+                        ),
+                        itemCount: filteredProducts.length,
+                        itemBuilder: (context, index) {
+                          final product = filteredProducts[index];
+                          return _buildProductRow(product);
+                        },
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: filteredProducts.length,
+                        separatorBuilder: (context, index) => const Divider(height: 16),
+                        itemBuilder: (context, index) {
+                          final product = filteredProducts[index];
+                          return _buildProductRow(product);
+                        },
+                      ),
           ),
 
           // 4. Bottom Sticky Action Footer
