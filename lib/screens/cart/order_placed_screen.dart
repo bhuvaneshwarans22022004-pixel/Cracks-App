@@ -5,8 +5,10 @@ import '../../providers/auth_provider.dart';
 import '../../providers/order_provider.dart';
 import '../order/invoice_screen.dart';
 import '../home/home_screen.dart';
+import '../../utils/whatsapp_helper.dart';
 
-class OrderPlacedScreen extends StatelessWidget {
+
+class OrderPlacedScreen extends StatefulWidget {
   final String orderId;
   final double toPay;
 
@@ -16,11 +18,63 @@ class OrderPlacedScreen extends StatelessWidget {
     required this.toPay,
   });
 
-  String get displayOrderId {
-    if (orderId.length >= 8) {
-      return "FK${orderId.substring(orderId.length - 8).toUpperCase()}";
+  @override
+  State<OrderPlacedScreen> createState() => _OrderPlacedScreenState();
+}
+
+class _OrderPlacedScreenState extends State<OrderPlacedScreen> {
+  bool _hasAutoSentWhatsApp = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _autoSendWhatsApp();
+    });
+  }
+
+  void _autoSendWhatsApp() {
+    if (_hasAutoSentWhatsApp) return;
+    _hasAutoSentWhatsApp = true;
+
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final user = auth.user;
+    final orderProvider = Provider.of<OrderProvider>(context, listen: false);
+
+    final matchedOrder = orderProvider.orders.firstWhere(
+      (o) => o.id == widget.orderId,
+      orElse: () => null as dynamic,
+    );
+
+    if (matchedOrder != null) {
+      final itemsList = matchedOrder.items.map((i) => {
+        'name': i.name,
+        'quantity': i.quantity,
+        'price': i.price,
+      }).toList();
+
+      WhatsAppHelper.launchOrderPlacedNotice(
+        orderId: displayOrderId,
+        rawId: widget.orderId,
+        customerName: user?.name ?? "Customer",
+        phone: user?.phone ?? "",
+        totalAmount: matchedOrder.totalAmount > 0 ? matchedOrder.totalAmount : widget.toPay,
+        address: matchedOrder.shippingAddress,
+        items: itemsList,
+        paymentStatus: matchedOrder.paymentMethod,
+      );
+    } else {
+      WhatsAppHelper.launchWhatsApp(
+        message: "Hello FestiveKart! 🎆\nI have placed order #$displayOrderId (Total: ₹${widget.toPay.toStringAsFixed(0)}). Please confirm and send delivery updates. Name: ${user?.name ?? ''}, Phone: ${user?.phone ?? ''}",
+      );
     }
-    return "FK${orderId.toUpperCase()}";
+  }
+
+  String get displayOrderId {
+    if (widget.orderId.length >= 8) {
+      return "FK${widget.orderId.substring(widget.orderId.length - 8).toUpperCase()}";
+    }
+    return "FK${widget.orderId.toUpperCase()}";
   }
 
   @override
@@ -157,7 +211,7 @@ class OrderPlacedScreen extends StatelessWidget {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                "Amount Paid: ₹${toPay.toStringAsFixed(0)}",
+                                "Amount Paid: ₹${widget.toPay.toStringAsFixed(0)}",
                                 style: GoogleFonts.outfit(
                                   fontSize: 13,
                                   color: Colors.grey[600],
@@ -169,17 +223,65 @@ class OrderPlacedScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 24),
 
-                        // Shipment Status Info
-                        Text(
-                          "We will notify you once your order is shipped.",
-                          style: GoogleFonts.outfit(
-                            fontSize: 13,
-                            color: Colors.grey[500],
-                            fontStyle: FontStyle.italic,
+                        // Send Order Details to WhatsApp Button
+                        SizedBox(
+                          width: double.infinity,
+                          height: 52,
+                          child: ElevatedButton.icon(
+                            key: const Key('whatsapp_order_notice_btn'),
+                            icon: const Icon(Icons.chat_bubble_rounded, color: Colors.white, size: 20),
+                            label: Text(
+                              "Send Order Details to WhatsApp 💬",
+                              style: GoogleFonts.outfit(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF25D366), // WhatsApp Green
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed: () {
+                              final auth = Provider.of<AuthProvider>(context, listen: false);
+                              final user = auth.user;
+                              final orderProvider = Provider.of<OrderProvider>(context, listen: false);
+                              
+                              final matchedOrder = orderProvider.orders.firstWhere(
+                                (o) => o.id == widget.orderId,
+                                orElse: () => null as dynamic,
+                              );
+
+                              if (matchedOrder != null) {
+                                final itemsList = matchedOrder.items.map((i) => {
+                                  'name': i.name,
+                                  'quantity': i.quantity,
+                                  'price': i.price,
+                                }).toList();
+
+                                WhatsAppHelper.launchOrderPlacedNotice(
+                                  orderId: displayOrderId,
+                                  rawId: widget.orderId,
+                                  customerName: user?.name ?? "Customer",
+                                  phone: user?.phone ?? "",
+                                  totalAmount: matchedOrder.totalAmount > 0 ? matchedOrder.totalAmount : widget.toPay,
+                                  address: matchedOrder.shippingAddress,
+                                  items: itemsList,
+                                  paymentStatus: matchedOrder.paymentMethod,
+                                );
+                              } else {
+                                WhatsAppHelper.launchWhatsApp(
+                                  message: "Hello FestiveKart! 🎆\nI have placed order #$displayOrderId (Total: ₹${widget.toPay.toStringAsFixed(0)}). Please confirm and send delivery updates. Name: ${user?.name ?? ''}, Phone: ${user?.phone ?? ''}",
+                                );
+                              }
+                            },
                           ),
-                          textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 48),
+                        const SizedBox(height: 16),
+
                         // Action Buttons: Track Order
                         SizedBox(
                           width: double.infinity,
@@ -257,7 +359,7 @@ class OrderPlacedScreen extends StatelessWidget {
                                   
                                   final orderProvider = Provider.of<OrderProvider>(context, listen: false);
                                   final order = orderProvider.orders.firstWhere(
-                                    (o) => o.id == orderId,
+                                    (o) => o.id == widget.orderId,
                                   );
                                   
                                   Navigator.push(

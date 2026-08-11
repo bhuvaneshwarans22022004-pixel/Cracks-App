@@ -47,6 +47,7 @@ class RemoteConfigService {
       // 3. Set local fallback defaults
       await remoteConfig.setDefaults(<String, dynamic>{
         'base_url': AppConstants.baseUrl,
+        'whatsapp_number': AppConstants.whatsappNumber,
         'upi_id': AppConstants.upiId,
         'gpay_number': AppConstants.gpayNumber,
       });
@@ -78,12 +79,17 @@ class RemoteConfigService {
 
   void _updateConstants(FirebaseRemoteConfig remoteConfig) {
     final remoteBaseUrl = remoteConfig.getString('base_url');
+    final remoteWhatsapp = remoteConfig.getString('whatsapp_number');
     final remoteUpiId = remoteConfig.getString('upi_id');
     final remoteGpayNumber = remoteConfig.getString('gpay_number');
 
     if (remoteBaseUrl.isNotEmpty) {
       AppConstants.baseUrl = remoteBaseUrl;
       log('Applied Remote Config base_url: $remoteBaseUrl');
+    }
+    if (remoteWhatsapp.isNotEmpty) {
+      AppConstants.whatsappNumber = remoteWhatsapp;
+      log('Applied Remote Config whatsapp_number: $remoteWhatsapp');
     }
     if (remoteUpiId.isNotEmpty) {
       AppConstants.upiId = remoteUpiId;

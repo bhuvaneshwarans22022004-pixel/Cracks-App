@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/cms_provider.dart';
+import '../utils/whatsapp_helper.dart';
+
 
 class WebFooter extends StatelessWidget {
   final Function(int)? onNavigateTab;
@@ -409,6 +411,12 @@ class WebFooter extends StatelessWidget {
             Icons.phone_android_rounded,
             phone1,
             onTap: () => _launchUrl("tel:${phone1.replaceAll(RegExp(r'[^\d+]'), '')}"),
+          ),
+          const SizedBox(height: 6),
+          _contactRow(
+            Icons.chat_bubble_rounded,
+            "WhatsApp Support (9385757220)",
+            onTap: () => WhatsAppHelper.launchGeneralChat(),
           ),
         ],
         if (phone2.isNotEmpty) ...[

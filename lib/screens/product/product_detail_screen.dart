@@ -8,6 +8,8 @@ import '../../providers/auth_provider.dart';
 import '../../providers/product_provider.dart';
 import '../../widgets/guest_auth_prompt.dart';
 import '../cart/cart_screen.dart';
+import '../../utils/whatsapp_helper.dart';
+
 
 class ProductDetailScreen extends StatefulWidget {
   final Product product;
@@ -712,6 +714,36 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   fontSize: 15,
                                 ),
                               ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+
+                          // WhatsApp Inquiry Button
+                          SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: ElevatedButton.icon(
+                              icon: const Icon(Icons.chat_bubble_rounded, color: Colors.white, size: 20),
+                              label: Text(
+                                "Inquire on WhatsApp 💬",
+                                style: GoogleFonts.outfit(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF25D366),
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              onPressed: () {
+                                WhatsAppHelper.launchWhatsApp(
+                                  message: "Hello FestiveKart! 🎆\nI am interested in *${product.name}* (Price: ₹${product.price.toStringAsFixed(0)}). Please share details / bulk availability.",
+                                );
+                              },
                             ),
                           ),
                           const SizedBox(height: 25),

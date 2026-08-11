@@ -5,6 +5,8 @@ import '../../providers/product_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/address_provider.dart';
 import '../../services/api_service.dart';
+import '../../utils/whatsapp_helper.dart';
+
 
 class WholesaleEnquiryScreen extends StatefulWidget {
   const WholesaleEnquiryScreen({super.key});
@@ -547,7 +549,50 @@ class _WholesaleEnquiryScreenState extends State<WholesaleEnquiryScreen> {
                   ),
                   validator: (value) => value!.isEmpty ? "Please enter your requirements" : null,
                 ),
-                const SizedBox(height: 24),
+                // Send via WhatsApp Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.chat_bubble_rounded, color: Colors.white, size: 20),
+                    label: Text(
+                      "Send Bulk Order via WhatsApp 💬",
+                      style: GoogleFonts.outfit(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF25D366), // WhatsApp Green
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () {
+                      final itemsPayload = _selectedItems.map((item) {
+                        return {
+                          'name': item['productName'] ?? 'Product',
+                          'quantity': item['qtyController'].text.trim(),
+                        };
+                      }).toList();
+
+                      WhatsAppHelper.launchBulkOrderEnquiry(
+                        name: _businessNameController.text.trim().isNotEmpty
+                            ? _businessNameController.text.trim()
+                            : "Wholesale Buyer",
+                        phone: _phoneController.text.trim(),
+                        city: _addressController.text.trim().isNotEmpty
+                            ? _addressController.text.trim()
+                            : "Tamil Nadu",
+                        notes: _messageController.text.trim(),
+                        items: itemsPayload,
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 12),
 
                 // Submit Button
                 SizedBox(

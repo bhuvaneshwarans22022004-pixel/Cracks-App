@@ -31,6 +31,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../models/product.dart';
 import '../product/product_detail_screen.dart';
 import '../offer/offer_detail_screen.dart';
+import '../../utils/whatsapp_helper.dart';
+
 
 String getAppCategory(String rawCat) {
   final cat = rawCat.trim();
@@ -566,86 +568,127 @@ class _HomeScreenState extends State<HomeScreen> {
         children: pages,
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      floatingActionButton: (cart.itemCount > 0 && (_selectedIndex == 0 || _selectedIndex == 1))
-          ? Padding(
-              padding: const EdgeInsets.only(bottom: 8, right: 4),
-              child: GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    PageRouteBuilder(
-                      pageBuilder: (context, animation, secondaryAnimation) => const CartScreen(),
-                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                        const begin = Offset(0.0, 1.0);
-                        const end = Offset.zero;
-                        const curve = Curves.easeOutCubic;
-                        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-                        return SlideTransition(position: animation.drive(tween), child: child);
-                      },
+      floatingActionButton: (_selectedIndex == 0 || _selectedIndex == 1)
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                // 1. Floating WhatsApp Chat FAB
+                GestureDetector(
+                  onTap: () => WhatsAppHelper.launchGeneralChat(),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF25D366), // Official WhatsApp Green
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF25D366).withOpacity(0.4),
+                          blurRadius: 14,
+                          offset: const Offset(0, 6),
+                        )
+                      ],
                     ),
-                  );
-                },
-                child: Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFFF6B00), Color(0xFFFF9F1C)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFFFF6B00).withOpacity(0.5),
-                        blurRadius: 18,
-                        offset: const Offset(0, 8),
-                        spreadRadius: 2,
-                      ),
-                    ],
-                  ),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    clipBehavior: Clip.none,
-                    children: [
-                      const Icon(
-                        Icons.shopping_bag_rounded,
-                        color: Colors.white,
-                        size: 28,
-                      ),
-                      Positioned(
-                        top: -2,
-                        right: -2,
-                        child: Container(
-                          padding: const EdgeInsets.all(5),
-                          constraints: const BoxConstraints(minWidth: 22, minHeight: 22),
-                          decoration: BoxDecoration(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.chat_bubble_rounded, color: Colors.white, size: 20),
+                        const SizedBox(width: 6),
+                        Text(
+                          "Chat with Us",
+                          style: GoogleFonts.outfit(
                             color: Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
                           ),
-                          child: Center(
-                            child: Text(
-                              '${cart.itemCount}',
-                              style: GoogleFonts.outfit(
-                                color: const Color(0xFFFF6B00),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w900,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // 2. Cart FAB (If cart has items)
+                if (cart.itemCount > 0) ...[
+                  const SizedBox(height: 12),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        PageRouteBuilder(
+                          pageBuilder: (context, animation, secondaryAnimation) => const CartScreen(),
+                          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                            const begin = Offset(0.0, 1.0);
+                            const end = Offset.zero;
+                            const curve = Curves.easeOutCubic;
+                            var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                            return SlideTransition(position: animation.drive(tween), child: child);
+                          },
+                        ),
+                      );
+                    },
+                    child: Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFFF6B00), Color(0xFFFF9F1C)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFFF6B00).withOpacity(0.5),
+                            blurRadius: 18,
+                            offset: const Offset(0, 8),
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: Stack(
+                        alignment: Alignment.center,
+                        clipBehavior: Clip.none,
+                        children: [
+                          const Icon(
+                            Icons.shopping_bag_rounded,
+                            color: Colors.white,
+                            size: 28,
+                          ),
+                          Positioned(
+                            top: -2,
+                            right: -2,
+                            child: Container(
+                              padding: const EdgeInsets.all(5),
+                              constraints: const BoxConstraints(minWidth: 22, minHeight: 22),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '${cart.itemCount}',
+                                  style: GoogleFonts.outfit(
+                                    color: const Color(0xFFFF6B00),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
-                        ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
+                ],
+              ],
             )
           : null,
       bottomNavigationBar: isWeb
@@ -796,6 +839,15 @@ class _HomeScreenState extends State<HomeScreen> {
             onTap: () {
               Navigator.pop(context);
               _setSelectedIndex(0);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.chat_bubble_rounded, color: Color(0xFF25D366)),
+            title: Text("WhatsApp Support", style: GoogleFonts.outfit(fontWeight: FontWeight.w600, color: const Color(0xFF25D366))),
+            subtitle: Text("Quick chat & order help", style: GoogleFonts.outfit(fontSize: 11, color: Colors.grey[500])),
+            onTap: () {
+              Navigator.pop(context);
+              WhatsAppHelper.launchGeneralChat();
             },
           ),
           ListTile(
@@ -984,28 +1036,39 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ],
                         ),
-                        // Cart Badge
-                        Stack(
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
+                            // Header WhatsApp Chat Button
                             IconButton(
-                              icon: const Icon(Icons.shopping_cart_outlined, color: Colors.black87),
-                              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CartScreen())),
+                              icon: const Icon(Icons.chat_bubble_rounded, color: Color(0xFF25D366)),
+                              tooltip: "WhatsApp Support",
+                              onPressed: () => WhatsAppHelper.launchGeneralChat(),
                             ),
-                            if (cart.itemCount > 0)
-                              Positioned(
-                                right: 6,
-                                top: 6,
-                                child: Container(
-                                  padding: const EdgeInsets.all(2),
-                                  decoration: BoxDecoration(color: const Color(0xFFFF8C00), borderRadius: BorderRadius.circular(10)),
-                                  constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-                                  child: Text(
-                                    '${cart.itemCount}',
-                                    style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
-                                    textAlign: TextAlign.center,
-                                  ),
+                            // Cart Badge
+                            Stack(
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.shopping_cart_outlined, color: Colors.black87),
+                                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CartScreen())),
                                 ),
-                              ),
+                                if (cart.itemCount > 0)
+                                  Positioned(
+                                    right: 6,
+                                    top: 6,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(2),
+                                      decoration: BoxDecoration(color: const Color(0xFFFF8C00), borderRadius: BorderRadius.circular(10)),
+                                      constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                                      child: Text(
+                                        '${cart.itemCount}',
+                                        style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
                           ],
                         ),
                       ],
@@ -1099,6 +1162,20 @@ class _HomeScreenState extends State<HomeScreen> {
                       physics: const BouncingScrollPhysics(),
                       child: Row(
                         children: [
+                          SizedBox(
+                            width: 145,
+                            child: _buildServiceBannerCard(
+                              context,
+                              title: "WhatsApp Chat",
+                              subtitle: "Quick Support",
+                              icon: Icons.chat_bubble_rounded,
+                              bgColor: const Color(0xFFE8F5E9),
+                              borderColor: const Color(0xFFA5D6A7),
+                              accentColor: const Color(0xFF25D366),
+                              type: "whatsapp",
+                            ),
+                          ),
+                          const SizedBox(width: 8),
                           SizedBox(
                             width: 145,
                             child: _buildServiceBannerCard(
@@ -1645,12 +1722,16 @@ class _HomeScreenState extends State<HomeScreen> {
   }) {
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ServiceEnquiryScreen(initialType: type),
-          ),
-        );
+        if (type == 'whatsapp') {
+          WhatsAppHelper.launchGeneralChat();
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ServiceEnquiryScreen(initialType: type),
+            ),
+          );
+        }
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),

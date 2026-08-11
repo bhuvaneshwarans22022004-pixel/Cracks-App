@@ -2,7 +2,8 @@ class AppConstants {
   static String baseUrl = 'https://backend.festivekart.in';
   static const String appName = 'FestiveKart';
   
-  // Payment credentials
+  // Payment & Contact credentials
+  static String whatsappNumber = '919385757220';
   static String upiId = 'gokulelangovan7999@okicici';
   static String gpayNumber = '8248188398';
 

@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import '../../models/order.dart';
 import 'invoice_screen.dart';
 import 'utr_dialog.dart';
+import '../../utils/whatsapp_helper.dart';
+
 
 class OrderTrackingScreen extends StatelessWidget {
   final Order order;
@@ -543,62 +545,98 @@ class OrderTrackingScreen extends StatelessWidget {
                 // Footer buttons
                 Padding(
                   padding: const EdgeInsets.all(24),
-                  child: Row(
+                  child: Column(
                     children: [
-                      Expanded(
-                        child: SizedBox(
-                          height: 52,
-                          child: OutlinedButton.icon(
-                            icon: const Icon(Icons.receipt_long_rounded, color: Color(0xFFFF8C00), size: 18),
-                            label: Text(
-                              "View Invoice",
-                              style: GoogleFonts.outfit(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFFFF8C00),
-                              ),
+                      // WhatsApp Query Status Button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.chat_bubble_rounded, color: Colors.white, size: 18),
+                          label: Text(
+                            "Query Status on WhatsApp 💬",
+                            style: GoogleFonts.outfit(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
                             ),
-                            style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: Color(0xFFFF8C00), width: 1.5),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => InvoiceScreen(order: order),
-                                ),
-                              );
-                            },
                           ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF25D366), // WhatsApp Green
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onPressed: () {
+                            WhatsAppHelper.launchOrderStatusQuery(
+                              orderId: displayOrderId,
+                              rawId: order.id,
+                              currentStatus: order.status,
+                              totalAmount: order.totalAmount,
+                            );
+                          },
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: SizedBox(
-                          height: 52,
-                          child: ElevatedButton.icon(
-                            icon: const Icon(Icons.map_rounded, color: Colors.white, size: 18),
-                            label: Text(
-                              "Track on Map",
-                              style: GoogleFonts.outfit(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: SizedBox(
+                              height: 48,
+                              child: OutlinedButton.icon(
+                                icon: const Icon(Icons.receipt_long_rounded, color: Color(0xFFFF8C00), size: 18),
+                                label: Text(
+                                  "View Invoice",
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFFFF8C00),
+                                  ),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  side: const BorderSide(color: Color(0xFFFF8C00), width: 1.5),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => InvoiceScreen(order: order),
+                                    ),
+                                  );
+                                },
                               ),
                             ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFFF8C00),
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            onPressed: () => _showMapModal(context),
                           ),
-                        ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: SizedBox(
+                              height: 48,
+                              child: ElevatedButton.icon(
+                                icon: const Icon(Icons.map_rounded, color: Colors.white, size: 18),
+                                label: Text(
+                                  "Track on Map",
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFFF8C00),
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                onPressed: () => _showMapModal(context),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),

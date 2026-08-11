@@ -8,6 +8,10 @@ import '../providers/cart_provider.dart';
 import '../screens/cart/cart_screen.dart';
 import '../utils/app_scroll_behavior.dart';
 import '../utils/minimum_order_helper.dart';
+import '../utils/whatsapp_helper.dart';
+import '../providers/auth_provider.dart';
+import '../providers/address_provider.dart';
+
 
 class QuickOrderSheet extends StatefulWidget {
   const QuickOrderSheet({super.key});
@@ -484,7 +488,46 @@ class _QuickOrderSheetState extends State<QuickOrderSheet> {
                       ),
                     ],
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 12),
+                  // WhatsApp Bulk Order Button
+                  SizedBox(
+                    height: 48,
+                    child: IconButton(
+                      tooltip: "Send Bulk Order via WhatsApp",
+                      style: IconButton.styleFrom(
+                        backgroundColor: const Color(0xFF25D366),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      icon: const Icon(Icons.chat_bubble_rounded, color: Colors.white, size: 20),
+                      onPressed: totalItemsCount > 0
+                          ? () {
+                              final auth = Provider.of<AuthProvider>(context, listen: false);
+                              final addr = Provider.of<AddressProvider>(context, listen: false).selectedAddress;
+                              final user = auth.user;
+
+                              final selectedItemsPayload = <Map<String, dynamic>>[];
+                              _selectedQuantities.forEach((prodId, qty) {
+                                if (qty > 0) {
+                                  final prod = allProducts.firstWhere((p) => p.id == prodId);
+                                  selectedItemsPayload.add({
+                                    'name': prod.name,
+                                    'quantity': qty,
+                                  });
+                                }
+                              });
+
+                              WhatsAppHelper.launchBulkOrderEnquiry(
+                                name: user?.name ?? "Customer",
+                                phone: user?.phone ?? "",
+                                city: addr != null ? "${addr.city}, ${addr.state}" : "Tamil Nadu",
+                                items: selectedItemsPayload,
+                                totalAmount: totalAmount,
+                              );
+                            }
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: SizedBox(
                       height: 48,
@@ -520,7 +563,7 @@ class _QuickOrderSheetState extends State<QuickOrderSheet> {
                           "Add & Checkout",
                           style: GoogleFonts.outfit(
                             fontWeight: FontWeight.bold,
-                            fontSize: 15,
+                            fontSize: 14,
                           ),
                         ),
                       ),
