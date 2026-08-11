@@ -79,7 +79,12 @@ class RemoteConfigService {
 
   void _updateConstants(FirebaseRemoteConfig remoteConfig) {
     final remoteBaseUrl = remoteConfig.getString('base_url');
-    final remoteWhatsapp = remoteConfig.getString('whatsapp_number');
+    final String remoteWhatsapp = [
+      remoteConfig.getString('whatsapp_number'),
+      remoteConfig.getString('whatsapp_phone'),
+      remoteConfig.getString('whatsapp'),
+      remoteConfig.getString('whatsapp_no'),
+    ].firstWhere((val) => val.isNotEmpty, orElse: () => '');
     final remoteUpiId = remoteConfig.getString('upi_id');
     final remoteGpayNumber = remoteConfig.getString('gpay_number');
 

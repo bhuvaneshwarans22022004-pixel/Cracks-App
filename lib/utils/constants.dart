@@ -3,7 +3,7 @@ class AppConstants {
   static const String appName = 'FestiveKart';
   
   // Payment & Contact credentials
-  static String whatsappNumber = '919385757220';
+  static String whatsappNumber = '918248188398';
   static String upiId = 'gokulelangovan7999@okicici';
   static String gpayNumber = '8248188398';
 
