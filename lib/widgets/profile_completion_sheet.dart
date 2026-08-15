@@ -162,27 +162,21 @@ class _ProfileCompletionSheetState extends State<ProfileCompletionSheet> {
 
     try {
       final auth = Provider.of<AuthProvider>(context, listen: false);
-      // We update the email field in the profile database
-      final success = await auth.updateProfile(auth.user!.name, auth.user!.phone);
-      if (success) {
-        // Double check: backend update profile can also update email if we update it. Let's make sure backend updates the email field.
-        // Wait, standard updateProfile controller in backend:
-        // user.name = req.body.name || user.name;
-        // user.phone = req.body.phone || user.phone;
-        // Wait! Does updateUserProfile support updating email?
-        // Let's check userAuthController.js line 83:
-        // user.name = req.body.name || user.name;
-        // user.phone = req.body.phone || user.phone;
-        // It does NOT support req.body.email!
-        // Wait! We can easily use identity linking to link an email as well!
-        // To link an email address securely, the client can use Google Sign-In (which triggers linkFirebaseIdentity!) or we can modify updateUserProfile to allow updating email if it is currently null/empty!
-        // Allowing updateUserProfile to set email if it's not set is extremely safe! Let's check how to do it.
-        // Let's first make sure we can trigger linkFirebaseIdentity with a Google token, or write email directly!
+      final success = await auth.updateProfile(
+        auth.user!.name,
+        auth.user!.phone,
+        email: email,
+      );
+      if (success && mounted) {
+        Navigator.pop(context);
+        widget.onCompleted();
       }
-      
-      // Let's implement Google linking directly as it is 100% secure, or allow entering it. Let's support both.
     } catch (e) {
-      //
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to save email: ${e.toString()}")),
+        );
+      }
     }
   }
 

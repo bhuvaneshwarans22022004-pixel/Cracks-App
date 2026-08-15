@@ -96,12 +96,8 @@ class _AddressScreenState extends State<AddressScreen> {
 
   final List<String> _states = [
     "Tamil Nadu",
-    "Puducherry",
-    "Kerala",
     "Karnataka",
-    "Andhra Pradesh",
-    "Telangana",
-    "Others",
+    "Puducherry",
   ];
 
   @override

@@ -143,11 +143,20 @@ class SocialAuthService {
         idToken: googleAuth.idToken,
       );
 
-      // Link credential to the current Firebase User
-      final UserCredential userCredential = await firebaseUser.linkWithCredential(credential);
-      final User? updatedUser = userCredential.user;
-      if (updatedUser != null) {
-        return await updatedUser.getIdToken(true); // Force token refresh
+      try {
+        // Link credential to the current Firebase User
+        final UserCredential userCredential = await firebaseUser.linkWithCredential(credential);
+        final User? updatedUser = userCredential.user;
+        if (updatedUser != null) {
+          return await updatedUser.getIdToken(true); // Force token refresh
+        }
+      } catch (linkError) {
+        // If Firebase Auth linking fails (e.g. account already in use), return ID token for backend merge
+        print('Firebase linking failed: $linkError. Proceeding with Google ID Token for backend merge.');
+        if (googleAuth.idToken != null) {
+          return googleAuth.idToken;
+        }
+        rethrow;
       }
     } catch (e) {
       print('Native Google Linking Error: $e');
