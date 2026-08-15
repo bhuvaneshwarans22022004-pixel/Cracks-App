@@ -18,10 +18,15 @@ class ProfileCompletionSheet extends StatefulWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      isDismissible: false,
+      enableDrag: false,
       backgroundColor: Colors.transparent,
-      builder: (context) => ProfileCompletionSheet(
-        isPhoneOnly: isPhoneOnly,
-        onCompleted: onCompleted,
+      builder: (context) => PopScope(
+        canPop: false, // Disable Android back button dismiss
+        child: ProfileCompletionSheet(
+          isPhoneOnly: isPhoneOnly,
+          onCompleted: onCompleted,
+        ),
       ),
     );
   }
@@ -387,77 +392,6 @@ class _ProfileCompletionSheetState extends State<ProfileCompletionSheet> {
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 onPressed: _loading ? null : _linkGoogleEmail,
-              ),
-              const SizedBox(height: 16),
-              
-              const Center(child: Text("OR", style: TextStyle(color: Colors.white30, fontSize: 12, fontWeight: FontWeight.bold))),
-              const SizedBox(height: 16),
-
-              // Manual Email input field
-              TextField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: "Enter Email Address",
-                  hintStyle: const TextStyle(color: Colors.white38),
-                  prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFFFF9F1C)),
-                  filled: true,
-                  fillColor: Colors.white.withOpacity(0.06),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: Colors.white.withOpacity(0.12)),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: Colors.white.withOpacity(0.12)),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(color: Color(0xFFFF9F1C), width: 1.8),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                height: 52,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF9F1C),
-                    foregroundColor: const Color(0xFF1E0A35),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  ),
-                  onPressed: _loading ? null : () async {
-                    // Update email via backend profile directly
-                    final auth = Provider.of<AuthProvider>(context, listen: false);
-                    final email = _emailController.text.trim();
-                    if (email.isEmpty || !email.contains('@')) {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please enter a valid email")));
-                      return;
-                    }
-                    setState(() { _loading = true; });
-                    try {
-                      final response = await auth.updateProfile(auth.user!.name, auth.user!.phone);
-                      if (response) {
-                        // Wait! Since updateUserProfile in backend doesn't support email update directly, let's write a simple helper endpoint or add it.
-                        // Let's actually link email via standard auth provider update!
-                        // Actually, if we link it via Google it is verified. But we can also link it by adding a simple endpoint in userAuthController to update email.
-                        // Let's modify updateUserProfile to allow updating email if it is currently undefined/null in backend! That's extremely safe.
-                      }
-                      if (mounted) {
-                        Navigator.pop(context);
-                        widget.onCompleted();
-                      }
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: ${e.toString()}")));
-                    } finally {
-                      setState(() { _loading = false; });
-                    }
-                  },
-                  child: _loading 
-                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF1E0A35)))
-                    : const Text("Save Email Address", style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
               ),
             ],
             const SizedBox(height: 12),
