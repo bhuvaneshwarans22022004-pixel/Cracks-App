@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../widgets/custom_image.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../models/product.dart';
@@ -411,17 +412,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                       borderRadius: BorderRadius.circular(20),
                                       border: Border.all(color: Colors.grey[100]!),
                                     ),
-                                    child: CachedNetworkImage(
+                                    child: CustomNetworkImage(
                                       imageUrl: activeImage,
                                       fit: BoxFit.contain,
-                                      placeholder: (context, url) => const Center(
+                                      placeholder: const Center(
                                         child: SizedBox(
                                           height: 32,
                                           width: 32,
                                           child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFFF8C00)),
                                         ),
                                       ),
-                                      errorWidget: (context, url, error) => const Icon(
+                                      errorWidget: const Icon(
                                         Icons.celebration,
                                         color: Color(0xFFFF8C00),
                                         size: 96,
@@ -452,10 +453,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                                     width: isSelected ? 2 : 1,
                                                   ),
                                                 ),
-                                                child: CachedNetworkImage(
+                                                child: CustomNetworkImage(
                                                   imageUrl: displayImages[idx],
                                                   fit: BoxFit.contain,
-                                                  errorWidget: (context, url, error) => const Icon(Icons.image, size: 20),
+                                                  errorWidget: const Icon(Icons.image, size: 20),
                                                 ),
                                               ),
                                               const SizedBox(height: 2),
@@ -1198,10 +1199,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                               color: Colors.grey[50],
                                               borderRadius: BorderRadius.circular(10),
                                             ),
-                                            child: CachedNetworkImage(
+                                            child: CustomNetworkImage(
                                               imageUrl: simProd.image,
                                               fit: BoxFit.contain,
-                                              errorWidget: (c, u, e) => const Icon(Icons.celebration, color: Color(0xFFFF8C00)),
+                                              errorWidget: const Icon(Icons.celebration, color: Color(0xFFFF8C00)),
                                             ),
                                           ),
                                           const SizedBox(height: 8),

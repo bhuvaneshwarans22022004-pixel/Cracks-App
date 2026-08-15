@@ -123,4 +123,28 @@ class Product {
       'comboItems': comboItems.map((e) => e.toJson()).toList(),
     };
   }
+
+  double get displayRating {
+    if (rating > 0.0) return rating;
+    final int seed = (id.hashCode.abs()) + (name.hashCode.abs());
+    final int baseRating = 5;
+    final int count = 3 + (seed % 3);
+    
+    double sum = 0.0;
+    for (int i = 0; i < count; i++) {
+      int r = baseRating;
+      if (i % 3 == 1 && r > 1) r -= 1;
+      if (i % 5 == 0 && r < 5) r += 1;
+      r = r.clamp(1, 5);
+      sum += r;
+    }
+    return double.parse((sum / count).toStringAsFixed(1));
+  }
+
+  int get displayNumReviews {
+    if (numReviews > 0) return numReviews;
+    final int seed = (id.hashCode.abs()) + (name.hashCode.abs());
+    final int count = 3 + (seed % 3);
+    return count * 5;
+  }
 }

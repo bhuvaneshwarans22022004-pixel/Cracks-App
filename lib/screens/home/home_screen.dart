@@ -28,6 +28,7 @@ import '../../widgets/quick_order_sheet.dart';
 import '../../widgets/web_footer.dart';
 import '../../services/update_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../widgets/custom_image.dart';
 import '../../models/product.dart';
 import '../product/product_detail_screen.dart';
 import '../offer/offer_detail_screen.dart';
@@ -573,36 +574,24 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                // 1. Floating WhatsApp Chat FAB
                 GestureDetector(
                   onTap: () => WhatsAppHelper.launchGeneralChat(),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    width: 50,
+                    height: 50,
                     decoration: BoxDecoration(
                       color: const Color(0xFF25D366), // Official WhatsApp Green
-                      borderRadius: BorderRadius.circular(30),
+                      shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
                           color: const Color(0xFF25D366).withOpacity(0.4),
-                          blurRadius: 14,
-                          offset: const Offset(0, 6),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
                         )
                       ],
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.chat_bubble_rounded, color: Colors.white, size: 20),
-                        const SizedBox(width: 6),
-                        Text(
-                          "Chat with Us",
-                          style: GoogleFonts.outfit(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
+                    child: const Center(
+                      child: Icon(Icons.chat_bubble_rounded, color: Colors.white, size: 24),
                     ),
                   ),
                 ),
@@ -2550,15 +2539,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ),
                                         child: ClipRRect(
                                           borderRadius: BorderRadius.circular(12),
-                                          child: CachedNetworkImage(
-                                            imageUrl: product.image,
-                                            fit: BoxFit.contain,
-                                            errorWidget: (context, url, error) => const Icon(
-                                              Icons.celebration,
-                                              color: Color(0xFFFF8C00),
-                                              size: 32,
-                                            ),
-                                          ),
+                                          child: CustomNetworkImage(
+                                             imageUrl: product.image,
+                                             fit: BoxFit.contain,
+                                             memCacheWidth: 150,
+                                             errorWidget: const Icon(
+                                               Icons.celebration,
+                                               color: Color(0xFFFF8C00),
+                                               size: 32,
+                                             ),
+                                           ),
                                         ),
                                       ),
                                       const SizedBox(width: 16),
@@ -2636,7 +2626,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 const Icon(Icons.star_rounded, color: Color(0xFFFFB703), size: 14),
                                                 const SizedBox(width: 2),
                                                 Text(
-                                                  "${product.rating}",
+                                                  "${product.displayRating}",
                                                   style: GoogleFonts.outfit(
                                                     fontSize: 11,
                                                     fontWeight: FontWeight.bold,
@@ -2644,7 +2634,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                   ),
                                                 ),
                                                 Text(
-                                                  " (${product.numReviews})",
+                                                  " (${product.displayNumReviews})",
                                                   style: GoogleFonts.outfit(
                                                     fontSize: 11,
                                                     color: Colors.grey[500],

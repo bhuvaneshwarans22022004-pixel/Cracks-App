@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../widgets/custom_image.dart';
 import '../../providers/product_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../models/product.dart';
@@ -121,17 +122,17 @@ class _OfferDetailScreenState extends State<OfferDetailScreen> {
                               if (imageUrl.isNotEmpty) ...[
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(16),
-                                  child: CachedNetworkImage(
+                                  child: CustomNetworkImage(
                                     imageUrl: imageUrl,
                                     width: double.infinity,
                                     height: isWeb ? 200 : 160,
                                     fit: BoxFit.cover,
-                                    placeholder: (context, url) => Container(
+                                    placeholder: Container(
                                       height: isWeb ? 200 : 160,
                                       color: Colors.white10,
                                       child: const Center(child: CircularProgressIndicator(color: Color(0xFFFFB703))),
                                     ),
-                                    errorWidget: (context, url, error) => const SizedBox(),
+                                    errorWidget: const SizedBox(),
                                   ),
                                 ),
                                 const SizedBox(height: 16),
@@ -379,12 +380,12 @@ class _OfferDetailScreenState extends State<OfferDetailScreen> {
                                     Expanded(
                                       child: ClipRRect(
                                         borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                                        child: CachedNetworkImage(
+                                        child: CustomNetworkImage(
                                           imageUrl: product.image,
                                           width: double.infinity,
                                           fit: BoxFit.contain,
-                                          placeholder: (context, url) => Container(color: Colors.grey[100]),
-                                          errorWidget: (context, url, error) => const Icon(Icons.inventory_2_outlined),
+                                          placeholder: Container(color: Colors.grey[100]),
+                                          errorWidget: const Icon(Icons.inventory_2_outlined),
                                         ),
                                       ),
                                     ),

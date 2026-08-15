@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../widgets/custom_image.dart';
 import '../../providers/wishlist_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/cart_provider.dart';
@@ -420,7 +421,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
   // High resolution custom product card builder
   Widget _buildWishlistItemCard(BuildContext context, Product product, WishlistProvider wishlist, CartProvider cart, AuthProvider auth) {
     // Custom logic to simulate tags
-    final isBestSeller = product.rating >= 4.5;
+    final isBestSeller = product.displayRating >= 4.5;
     final isOutOfStock = product.countInStock == 0;
     final isLimitedStock = product.countInStock > 0 && product.countInStock <= 5;
     
@@ -465,12 +466,13 @@ class _WishlistScreenState extends State<WishlistScreen> {
                       child: Stack(
                         fit: StackFit.expand,
                         children: [
-                          CachedNetworkImage(
-                            imageUrl: product.image,
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => Container(color: Colors.grey[100]),
-                            errorWidget: (context, url, error) => const Icon(Icons.celebration, color: Color(0xFFFF8C00)),
-                          ),
+                           CustomNetworkImage(
+                             imageUrl: product.image,
+                             fit: BoxFit.cover,
+                             memCacheWidth: 250,
+                             placeholder: Container(color: Colors.grey[100]),
+                             errorWidget: const Icon(Icons.celebration, color: Color(0xFFFF8C00)),
+                           ),
                           // Badges overlay
                           Positioned(
                             top: 8,
@@ -549,7 +551,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
                                   const Icon(Icons.star_rounded, color: Color(0xFFFFB300), size: 12),
                                   const SizedBox(width: 2),
                                   Text(
-                                    "${product.rating}",
+                                    "${product.displayRating}",
                                     style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold),
                                   ),
                                 ],

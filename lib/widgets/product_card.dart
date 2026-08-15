@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
+import 'custom_image.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/product.dart';
 import '../providers/auth_provider.dart';
@@ -49,12 +50,13 @@ class ProductCard extends StatelessWidget {
           Expanded(
             child: Stack(
               children: [
-                CachedNetworkImage(
+                CustomNetworkImage(
                   imageUrl: product.image,
                   fit: BoxFit.cover,
                   width: double.infinity,
-                  placeholder: (context, url) => Container(color: Colors.grey[200]),
-                  errorWidget: (context, url, error) => const Icon(Icons.celebration, color: Color(0xFFFF8C00)),
+                  memCacheWidth: 250,
+                  placeholder: Container(color: Colors.grey[200]),
+                  errorWidget: const Icon(Icons.celebration, color: Color(0xFFFF8C00)),
                 ),
                 if (isLowStock)
                   Positioned(
@@ -181,13 +183,13 @@ class ProductCard extends StatelessWidget {
                       decoration: BoxDecoration(color: Colors.green, borderRadius: BorderRadius.circular(4)),
                       child: Row(
                         children: [
-                          Text('${product.rating}', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                          Text('${product.displayRating}', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
                           const Icon(Icons.star, color: Colors.white, size: 10),
                         ],
                       ),
                     ),
                     const SizedBox(width: 5),
-                    Text('(${product.numReviews})', style: TextStyle(color: Colors.grey[600], fontSize: 10)),
+                    Text('(${product.displayNumReviews})', style: TextStyle(color: Colors.grey[600], fontSize: 10)),
                   ],
                 ),
                 const SizedBox(height: 6),

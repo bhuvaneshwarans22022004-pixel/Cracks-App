@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'custom_image.dart';
 import '../models/product.dart';
 import '../providers/product_provider.dart';
 import '../providers/cart_provider.dart';
@@ -58,10 +59,11 @@ class _QuickOrderSheetState extends State<QuickOrderSheet> {
             width: 52,
             height: 52,
             color: Colors.grey[100],
-            child: CachedNetworkImage(
+            child: CustomNetworkImage(
               imageUrl: product.image,
               fit: BoxFit.contain,
-              errorWidget: (c, u, e) => const Icon(Icons.celebration, color: Color(0xFFFF9F1C), size: 24),
+              memCacheWidth: 100,
+              errorWidget: const Icon(Icons.celebration, color: Color(0xFFFF9F1C), size: 24),
             ),
           ),
         ),
