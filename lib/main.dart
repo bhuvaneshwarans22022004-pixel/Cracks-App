@@ -19,46 +19,8 @@ import 'utils/theme.dart';
 import 'utils/app_scroll_behavior.dart';
 import 'services/remote_config_service.dart';
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  try {
-    bool isInitialized = false;
-    try {
-      isInitialized = Firebase.apps.isNotEmpty;
-    } catch (_) {
-      isInitialized = false;
-    }
-
-    if (!isInitialized) {
-      if (kIsWeb) {
-        await Firebase.initializeApp(
-          options: const FirebaseOptions(
-            apiKey: "AIzaSyBkVKhTQyRBnmgU3sKmjsnKRyLalRQc8QQ",
-            authDomain: "festivekart-101.firebaseapp.com",
-            appId: "1:734262498360:web:c73f1f1053f1f615bf82cd",
-            messagingSenderId: "734262498360",
-            projectId: "festivekart-101",
-            storageBucket: "festivekart-101.firebasestorage.app",
-            measurementId: "G-S8VHK4MQ9B",
-          ),
-        );
-      } else {
-        await Firebase.initializeApp(
-          options: const FirebaseOptions(
-            apiKey: "AIzaSyAk8s3xuL_jO5NZAygrWImiO8tfyNU7XYQ",
-            appId: "1:734262498360:android:6eeb3a130fc5fac0bf82cd",
-            messagingSenderId: "734262498360",
-            projectId: "festivekart-101",
-            storageBucket: "festivekart-101.firebasestorage.app",
-          ),
-        );
-      }
-    }
-  } catch (e, stackTrace) {
-    print("Firebase initialization error: $e");
-    print("StackTrace: $stackTrace");
-  }
-  await RemoteConfigService().initialize();
   runApp(
     MultiProvider(
       providers: [
@@ -109,22 +71,58 @@ class AuthWrapper extends StatefulWidget {
 class _AuthWrapperState extends State<AuthWrapper> {
   late Future<List<Object?>> _initializationFuture;
 
+  Future<void> _initializeFirebaseAndConfig() async {
+    try {
+      bool isInitialized = Firebase.apps.isNotEmpty;
+      if (!isInitialized) {
+        if (kIsWeb) {
+          await Firebase.initializeApp(
+            options: const FirebaseOptions(
+              apiKey: "AIzaSyBkVKhTQyRBnmgU3sKmjsnKRyLalRQc8QQ",
+              authDomain: "festivekart-101.firebaseapp.com",
+              appId: "1:734262498360:web:c73f1f1053f1f615bf82cd",
+              messagingSenderId: "734262498360",
+              projectId: "festivekart-101",
+              storageBucket: "festivekart-101.firebasestorage.app",
+              measurementId: "G-S8VHK4MQ9B",
+            ),
+          );
+        } else {
+          await Firebase.initializeApp(
+            options: const FirebaseOptions(
+              apiKey: "AIzaSyAk8s3xuL_jO5NZAygrWImiO8tfyNU7XYQ",
+              appId: "1:734262498360:android:6eeb3a130fc5fac0bf82cd",
+              messagingSenderId: "734262498360",
+              projectId: "festivekart-101",
+              storageBucket: "festivekart-101.firebasestorage.app",
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print("Firebase initialization error: $e");
+    }
+    await RemoteConfigService().initialize();
+  }
+
   @override
   void initState() {
     super.initState();
-    _initializationFuture = Future.wait([
-      Provider.of<AuthProvider>(context, listen: false).tryAutoLogin().then((loggedIn) {
-        if (loggedIn) {
-          final auth = Provider.of<AuthProvider>(context, listen: false);
-          if (auth.user != null && auth.user!.token != null) {
-            Provider.of<AddressProvider>(context, listen: false).fetchAddresses(auth.user!.token!);
-            Provider.of<WishlistProvider>(context, listen: false).fetchWishlist(auth.user!.token!);
+    _initializationFuture = _initializeFirebaseAndConfig().then((_) {
+      return Future.wait([
+        Provider.of<AuthProvider>(context, listen: false).tryAutoLogin().then((loggedIn) {
+          if (loggedIn) {
+            final auth = Provider.of<AuthProvider>(context, listen: false);
+            if (auth.user != null && auth.user!.token != null) {
+              Provider.of<AddressProvider>(context, listen: false).fetchAddresses(auth.user!.token!);
+              Provider.of<WishlistProvider>(context, listen: false).fetchWishlist(auth.user!.token!);
+            }
           }
-        }
-        return loggedIn;
-      }),
-      Future.delayed(const Duration(milliseconds: 2500)),
-    ]);
+          return loggedIn;
+        }),
+        Future.delayed(const Duration(milliseconds: 2000)), // Snappy transition timing
+      ]);
+    });
   }
 
   @override

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -264,7 +265,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final selectedAddress = addressProvider.selectedAddress;
     
     String initialText = _currentLocation;
-    if (!_hasCustomLocation && selectedAddress != null) {
+    if (initialText == "Select Location") {
+      initialText = "";
+    } else if (!_hasCustomLocation && selectedAddress != null) {
       initialText = "${selectedAddress.city}, ${selectedAddress.state}";
     }
     
@@ -1477,7 +1480,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
 
                   // Web Only Footer vs Mobile App minimal footer
-                  if (isWeb)
+                  if (kIsWeb)
                     WebFooter(
                       onNavigateTab: (idx) {
                         _setSelectedIndex(idx);

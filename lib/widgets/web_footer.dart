@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../providers/cms_provider.dart';
 import '../utils/whatsapp_helper.dart';
+import '../utils/constants.dart';
 
 
 class WebFooter extends StatelessWidget {
@@ -24,6 +27,32 @@ class WebFooter extends StatelessWidget {
       }
     } catch (e) {
       debugPrint("Error launching URL $urlStr: $e");
+    }
+  }
+
+  Future<void> _downloadLatestApk(BuildContext context) async {
+    try {
+      final response = await http.get(
+        Uri.parse("${AppConstants.baseUrl}/api/update.json"),
+      );
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        String apkUrl = data["apk_url"] ?? "";
+        if (apkUrl.isNotEmpty) {
+          await _launchUrl(apkUrl);
+          return;
+        }
+      }
+    } catch (e) {
+      debugPrint("Error fetching APK URL: $e");
+    }
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Unable to fetch latest app. Please try again later."),
+        ),
+      );
     }
   }
 
@@ -141,7 +170,7 @@ class WebFooter extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Col 1: About Us & Follow Us
-                        Expanded(flex: 3, child: _buildAboutCol(aboutUsText, mapsUrl)),
+                        Expanded(flex: 3, child: _buildAboutCol(context, aboutUsText, mapsUrl)),
                         const SizedBox(width: 32),
                         // Col 2: Quick Links
                         Expanded(flex: 2, child: _buildQuickLinksCol(context)),
@@ -166,7 +195,7 @@ class WebFooter extends StatelessWidget {
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildAboutCol(aboutUsText, mapsUrl),
+                        _buildAboutCol(context, aboutUsText, mapsUrl),
                         const SizedBox(height: 28),
                         _buildQuickLinksCol(context),
                         const SizedBox(height: 28),
@@ -211,7 +240,7 @@ class WebFooter extends StatelessWidget {
   }
 
   // Column 1: About Us & Follow Us
-  Widget _buildAboutCol(String aboutUsText, String mapsUrl) {
+  Widget _buildAboutCol(BuildContext context, String aboutUsText, String mapsUrl) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -307,6 +336,63 @@ class WebFooter extends StatelessWidget {
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 24),
+        Text(
+          "Download Mobile App",
+          style: GoogleFonts.outfit(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            shadows: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              )
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        InkWell(
+          onTap: () => _downloadLatestApk(context),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.85),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.white24),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.android, color: Color(0xFF3DDC84), size: 24),
+                const SizedBox(width: 8),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "GET IT FOR",
+                      style: GoogleFonts.outfit(
+                        fontSize: 8,
+                        color: Colors.white70,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      "Android (.APK)",
+                      style: GoogleFonts.outfit(
+                        fontSize: 12,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ),
       ],
     );

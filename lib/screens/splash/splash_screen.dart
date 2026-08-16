@@ -17,6 +17,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   late Animation<double> _logoScale;
   late Animation<double> _logoOpacity;
   late Animation<double> _pulseScale;
+  late Animation<Offset> _textSlideAnimation;
 
   @override
   void initState() {
@@ -56,6 +57,14 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       ),
     );
 
+    _textSlideAnimation = Tween<Offset>(
+      begin: const Offset(0.0, 0.45),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _logoEntranceController,
+      curve: const Interval(0.3, 0.85, curve: Curves.easeOutBack),
+    ));
+
     _logoEntranceController.forward();
   }
 
@@ -70,12 +79,184 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
+    final isLandscape = screenSize.width > screenSize.height;
+
+    // 1. Build the animated branding widget (Logo + Titles)
+    Widget brandingWidget = AnimatedBuilder(
+      animation: _logoEntranceController,
+      builder: (context, child) {
+        return Opacity(
+          opacity: _logoOpacity.value,
+          child: Transform.scale(
+            scale: _logoScale.value,
+            child: ScaleTransition(
+              scale: _pulseScale,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Glowing Emblem Container
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Outer Pulsing Glow Aura
+                      Container(
+                        width: 130,
+                        height: 130,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFFF8C00).withOpacity(0.55),
+                              blurRadius: 50,
+                              spreadRadius: 15,
+                            ),
+                            BoxShadow(
+                              color: const Color(0xFFFFD700).withOpacity(0.35),
+                              blurRadius: 30,
+                              spreadRadius: 5,
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Inner Circle containing logo.png
+                      Container(
+                        width: 105,
+                        height: 105,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.95),
+                            width: 3.5,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFFF8C00).withOpacity(0.2),
+                              blurRadius: 8,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                        child: ClipOval(
+                          child: Transform.scale(
+                            scale: 2.2,
+                            child: Image.asset(
+                              'assets/images/logo.png',
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 22),
+
+                  // Brand Title: FestiveKart with Slide-up and Gradient Shimmer Style
+                  SlideTransition(
+                    position: _textSlideAnimation,
+                    child: ShaderMask(
+                      shaderCallback: (bounds) => const LinearGradient(
+                        colors: [
+                          Color(0xFFFFFFFF),
+                          Color(0xFFFFD700),
+                          Color(0xFFFF9F1C),
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ).createShader(bounds),
+                      child: Text(
+                        "FestiveKart",
+                        style: GoogleFonts.outfit(
+                          fontSize: 40,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Subtitle Badge with Golden Accent
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.white.withOpacity(0.14),
+                          Colors.white.withOpacity(0.04),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: const Color(0xFFFFD700).withOpacity(0.55),
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 10,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.star_rounded, color: Color(0xFFFFD700), size: 14),
+                        const SizedBox(width: 6),
+                        Text(
+                          "A COMPLETE FESTIVAL NEEDS",
+                          style: GoogleFonts.outfit(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFFFFE082),
+                            letterSpacing: 2.2,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        const Icon(Icons.star_rounded, color: Color(0xFFFFD700), size: 14),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    // 2. Build the animated loading widget (Spinner + Status text)
+    Widget loaderWidget = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SizedBox(
+          width: 30,
+          height: 30,
+          child: CircularProgressIndicator(
+            strokeWidth: 2.8,
+            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF9F1C)),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          "PREPARING FESTIVE SELECTIONS",
+          style: GoogleFonts.outfit(
+            fontSize: 10,
+            color: Colors.white.withOpacity(0.75),
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.8,
+          ),
+        ),
+      ],
+    );
 
     return Scaffold(
       backgroundColor: const Color(0xFF02091D),
       body: Stack(
         children: [
-          // 1. Background Radial Midnight Gradient
+          // Background Radial Midnight Gradient
           Positioned.fill(
             child: Container(
               decoration: const BoxDecoration(
@@ -92,7 +273,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
             ),
           ),
 
-          // 2. Animated Rocket Launch & Sky Fireworks Starbursts
+          // Animated Rocket Launch & Sky Fireworks Starbursts
           Positioned.fill(
             child: AnimatedBuilder(
               animation: _fireworksController,
@@ -106,203 +287,107 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
             ),
           ),
 
-          // 3. Family Diwali Illustration Image Layer (Seamlessly Gradient-Blended into Sky)
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: screenSize.height * 0.48,
-            child: ShaderMask(
-              shaderCallback: (bounds) => LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  Colors.black.withOpacity(0.5),
-                  Colors.black,
-                ],
-                stops: const [0.0, 0.3, 1.0],
-              ).createShader(bounds),
-              blendMode: BlendMode.dstIn,
-              child: Image.asset(
-                'assets/images/family_diwali_splash.png',
-                fit: BoxFit.cover,
-                alignment: Alignment.topCenter,
-                errorBuilder: (context, error, stackTrace) {
-                  return const SizedBox.shrink();
-                },
-              ),
-            ),
-          ),
-
-          // 4. Central Festive Branding Card & Logo
-          Center(
-            child: AnimatedBuilder(
-              animation: _logoEntranceController,
-              builder: (context, child) {
-                return Opacity(
-                  opacity: _logoOpacity.value,
-                  child: Transform.scale(
-                    scale: _logoScale.value,
-                    child: ScaleTransition(
-                      scale: _pulseScale,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Glowing Emblem Container
-                          Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              // Outer Pulsing Glow Aura
-                              Container(
-                                width: 130,
-                                height: 130,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(0xFFFF8C00).withOpacity(0.55),
-                                      blurRadius: 50,
-                                      spreadRadius: 15,
-                                    ),
-                                    BoxShadow(
-                                      color: const Color(0xFFFFD700).withOpacity(0.35),
-                                      blurRadius: 30,
-                                      spreadRadius: 5,
-                                    ),
-                                  ],
-                                ),
-                              ),
-
-                              // Inner Gradient Circle Icon
-                              Container(
-                                width: 105,
-                                height: 105,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: const LinearGradient(
-                                    colors: [Color(0xFFFF9F1C), Color(0xFFFF4500)],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
-                                  border: Border.all(
-                                    color: Colors.white.withOpacity(0.95),
-                                    width: 3,
-                                  ),
-                                ),
-                                child: const Icon(
-                                  Icons.auto_awesome,
-                                  color: Colors.white,
-                                  size: 52,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 22),
-
-                          // Brand Title: FestiveKart with Gradient Shimmer Style
-                          ShaderMask(
-                            shaderCallback: (bounds) => const LinearGradient(
-                              colors: [
-                                Color(0xFFFFFFFF),
-                                Color(0xFFFFD700),
-                                Color(0xFFFF9F1C),
-                              ],
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                            ).createShader(bounds),
-                            child: Text(
-                              "FestiveKart",
-                              style: GoogleFonts.outfit(
-                                fontSize: 40,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                                letterSpacing: 1.5,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-
-                          // Subtitle Badge with Golden Accent
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
+          // Responsive Layout Switcher
+          Positioned.fill(
+            child: isLandscape
+                ? Row(
+                    children: [
+                      // Left Half: Show the Family Illustration (Full Image Card)
+                      Expanded(
+                        flex: 6,
+                        child: Center(
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 40, vertical: 30),
                             decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  Colors.white.withOpacity(0.14),
-                                  Colors.white.withOpacity(0.04),
-                                ],
-                              ),
                               borderRadius: BorderRadius.circular(24),
-                              border: Border.all(
-                                color: const Color(0xFFFFD700).withOpacity(0.55),
-                                width: 1,
-                              ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.2),
-                                  blurRadius: 10,
-                                ),
+                                  color: Colors.black.withOpacity(0.4),
+                                  blurRadius: 30,
+                                  spreadRadius: 2,
+                                )
                               ],
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(24),
+                              child: Image.asset(
+                                'assets/images/family_diwali_splash.jpg',
+                                fit: BoxFit.contain,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const SizedBox.shrink();
+                                },
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Right Half: Flutter-native branding & loader
+                      Expanded(
+                        flex: 5,
+                        child: Center(
+                          child: SingleChildScrollView(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Icon(Icons.star_rounded, color: Color(0xFFFFD700), size: 14),
-                                const SizedBox(width: 6),
-                                Text(
-                                  "A COMPLETE FESTIVAL NEEDS",
-                                  style: GoogleFonts.outfit(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w800,
-                                    color: const Color(0xFFFFE082),
-                                    letterSpacing: 2.2,
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                const Icon(Icons.star_rounded, color: Color(0xFFFFD700), size: 14),
+                                brandingWidget,
+                                const SizedBox(height: 50),
+                                loaderWidget,
                               ],
                             ),
                           ),
-                        ],
+                        ),
                       ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
+                    ],
+                  )
+                : Stack(
+                    children: [
+                      // Mobile: Family Illustration (Bottom 42% height, fit and fade top)
+                      Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        height: screenSize.height * 0.42,
+                        child: ShaderMask(
+                          shaderCallback: (bounds) => LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withOpacity(0.7),
+                              Colors.black,
+                            ],
+                            stops: const [0.0, 0.4, 1.0],
+                          ).createShader(bounds),
+                          blendMode: BlendMode.dstIn,
+                          child: Image.asset(
+                            'assets/images/family_diwali_splash.jpg',
+                            fit: BoxFit.contain,
+                            alignment: Alignment.bottomCenter,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const SizedBox.shrink();
+                            },
+                          ),
+                        ),
+                      ),
 
-          // 5. Bottom Loading Spinner & Status Text
-          Positioned(
-            bottom: 40,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const SizedBox(
-                    width: 30,
-                    height: 30,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.8,
-                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF9F1C)),
-                    ),
+                      // Mobile: Branding in the top half (no overlap!)
+                      Positioned(
+                        top: screenSize.height * 0.08,
+                        left: 0,
+                        right: 0,
+                        height: screenSize.height * 0.44,
+                        child: Center(child: brandingWidget),
+                      ),
+
+                      // Mobile: Loader in the middle space
+                      Positioned(
+                        bottom: screenSize.height * 0.44,
+                        left: 0,
+                        right: 0,
+                        child: Center(child: loaderWidget),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 10),
-                  Text(
-                    "PREPARING FESTIVE SELECTIONS",
-                    style: GoogleFonts.outfit(
-                      fontSize: 10,
-                      color: Colors.white.withOpacity(0.75),
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.8,
-                    ),
-                  ),
-                ],
-              ),
-            ),
           ),
         ],
       ),
