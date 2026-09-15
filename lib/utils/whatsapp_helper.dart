@@ -65,6 +65,7 @@ class WhatsAppHelper {
     required String address,
     required List<dynamic> items,
     String? paymentStatus,
+    String? invoiceUrl,
   }) {
     final StringBuffer buffer = StringBuffer();
     buffer.writeln("🎉 *NEW ORDER PLACED ON FESTIVEKART* 🎉");
@@ -87,9 +88,9 @@ class WhatsAppHelper {
       buffer.writeln(" • $name (x$qty) - ₹${(price * qty).toStringAsFixed(0)}");
     }
 
-    if (rawId != null && rawId.isNotEmpty) {
+    if (invoiceUrl != null && invoiceUrl.isNotEmpty && invoiceUrl.contains('firebasestorage')) {
       buffer.writeln();
-      buffer.writeln("📄 *Invoice PDF:* ${AppConstants.baseUrl}/api/orders/$rawId/invoice");
+      buffer.writeln("📄 *Invoice PDF:* $invoiceUrl");
     }
 
     buffer.writeln();
@@ -104,6 +105,7 @@ class WhatsAppHelper {
     String? rawId,
     required String currentStatus,
     double? totalAmount,
+    String? invoiceUrl,
   }) {
     final StringBuffer buffer = StringBuffer();
     buffer.writeln("Hello FestiveKart! 🎆");
@@ -113,8 +115,9 @@ class WhatsAppHelper {
     if (totalAmount != null) {
       buffer.writeln("💰 *Total Amount:* ₹${totalAmount.toStringAsFixed(0)}");
     }
-    if (rawId != null && rawId.isNotEmpty) {
-      buffer.writeln("📄 *Invoice PDF:* ${AppConstants.baseUrl}/api/orders/$rawId/invoice");
+    if (invoiceUrl != null && invoiceUrl.isNotEmpty && invoiceUrl.contains('firebasestorage')) {
+      buffer.writeln();
+      buffer.writeln("📄 *Invoice PDF:* $invoiceUrl");
     }
     buffer.writeln("Please provide an update on dispatch / tracking. Thanks!");
 
@@ -127,6 +130,7 @@ class WhatsAppHelper {
     required String customerName,
     required String orderId,
     String? mongoId,
+    String? invoiceUrl,
     required String newStatus,
     String? trackingNumber,
     String? transportName,
@@ -164,9 +168,9 @@ class WhatsAppHelper {
       }
     }
 
-    if (mongoId != null && mongoId.isNotEmpty) {
+        if (invoiceUrl != null && invoiceUrl.isNotEmpty && invoiceUrl.contains('firebasestorage')) {
       buffer.writeln();
-      buffer.writeln("📄 *Download Invoice PDF:* ${AppConstants.baseUrl}/api/orders/$mongoId/invoice");
+      buffer.writeln("📄 *Download Invoice PDF:* $invoiceUrl");
     }
 
     buffer.writeln();

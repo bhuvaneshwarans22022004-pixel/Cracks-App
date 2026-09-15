@@ -308,12 +308,7 @@ class WebFooter extends StatelessWidget {
                     )
                   ],
                 ),
-                child: Image.network(
-                  "https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Google_Maps_icon_%282015-2020%29.svg/512px-Google_Maps_icon_%282015-2020%29.svg.png",
-                  width: 20,
-                  height: 20,
-                  errorBuilder: (c, e, s) => const Icon(Icons.location_on, color: Colors.red, size: 20),
-                ),
+                child: const Icon(Icons.location_on_rounded, color: Colors.red, size: 20),
               ),
             ),
             const SizedBox(width: 12),
@@ -599,7 +594,7 @@ class WebFooter extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(9),
                   child: Image.network(
-                    "https://maps.googleapis.com/maps/api/staticmap?center=9.4533,77.7997&zoom=14&size=400x300&markers=color:red%7C9.4533,77.7997&key=AIzaSyA_mock",
+                    "https://tile.openstreetmap.org/13/5840/3616.png",
                     width: double.infinity,
                     height: double.infinity,
                     fit: BoxFit.cover,

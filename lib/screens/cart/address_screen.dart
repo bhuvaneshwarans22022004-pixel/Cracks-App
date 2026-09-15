@@ -732,42 +732,66 @@ class _AddressScreenState extends State<AddressScreen> {
                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                                         elevation: 0,
                                       ),
-                                      onPressed: () {
+                                      onPressed: () async {
                                         if (_formKey.currentState!.validate()) {
                                           final auth = Provider.of<AuthProvider>(context, listen: false);
-                                          final token = auth.user?.token ?? '';
-                                          final cityVal = _selectedCity != 'Select City' && _selectedCity != 'Others'
+                                          String token = auth.user?.token ?? '';
+
+                                          final enteredName = _nameController.text.trim();
+                                          final enteredPhone = _phoneController.text.trim();
+                                          final enteredEmail = _emailController.text.trim();
+
+                                          // Auto-register / auto-login user using their address details!
+                                          if (token.isEmpty && enteredPhone.isNotEmpty) {
+                                            final loggedIn = await auth.checkoutAuth(
+                                              name: enteredName.isNotEmpty ? enteredName : 'Customer',
+                                              phone: enteredPhone,
+                                              email: enteredEmail.isNotEmpty ? enteredEmail : null,
+                                            );
+                                            if (loggedIn && auth.user?.token != null) {
+                                              token = auth.user!.token!;
+                                            }
+                                          }
+
+                                          Address? savedAddress;
+                                          final cityVal = _selectedCity != 'Select City' && _selectedCity != 'Others' && _selectedCity.isNotEmpty
                                               ? _selectedCity
-                                              : (_cityController.text.isNotEmpty ? _cityController.text : "Coimbatore");
+                                              : (_cityController.text.trim().isNotEmpty ? _cityController.text.trim() : "Coimbatore");
+
+                                          final custName = enteredName.isNotEmpty ? enteredName : _addressType;
 
                                           if (existingAddress != null) {
                                             final updatedAddr = Address(
                                               id: existingAddress.id,
-                                              type: _addressType,
-                                              addressLine: _addressLineController.text,
+                                              type: custName,
+                                              addressLine: _addressLineController.text.trim(),
                                               city: cityVal,
                                               state: _selectedState,
-                                              zipCode: _zipCodeController.text.isNotEmpty ? _zipCodeController.text : "641001",
-                                              phoneNumber: _phoneController.text,
+                                              zipCode: _zipCodeController.text.trim().isNotEmpty ? _zipCodeController.text.trim() : "641001",
+                                              phoneNumber: enteredPhone,
                                             );
-                                            addressProvider.updateAddress(existingAddress.id, updatedAddr, token);
+                                            await addressProvider.updateAddress(existingAddress.id, updatedAddr, token);
+                                            savedAddress = updatedAddr;
                                           } else {
                                             final newAddr = Address(
                                               id: DateTime.now().millisecondsSinceEpoch.toString(),
-                                              type: _addressType,
-                                              addressLine: _addressLineController.text,
+                                              type: custName,
+                                              addressLine: _addressLineController.text.trim(),
                                               city: cityVal,
                                               state: _selectedState,
-                                              zipCode: _zipCodeController.text.isNotEmpty ? _zipCodeController.text : "641001",
-                                              phoneNumber: _phoneController.text,
+                                              zipCode: _zipCodeController.text.trim().isNotEmpty ? _zipCodeController.text.trim() : "641001",
+                                              phoneNumber: enteredPhone,
                                             );
-                                            addressProvider.addAddress(newAddr, token);
+                                            await addressProvider.addAddress(newAddr, token);
+                                            savedAddress = addressProvider.selectedAddress ?? newAddr;
                                           }
 
-                                          Navigator.pop(context);
+                                          if (context.mounted) {
+                                            Navigator.pop(context);
+                                          }
 
-                                          if (widget.isCheckoutMode) {
-                                            final selAddr = addressProvider.selectedAddress ?? (addressProvider.addresses.isNotEmpty ? addressProvider.addresses.last : null);
+                                          if (widget.isCheckoutMode && context.mounted) {
+                                            final selAddr = savedAddress ?? addressProvider.selectedAddress ?? (addressProvider.addresses.isNotEmpty ? addressProvider.addresses.last : null);
                                             if (selAddr != null) {
                                               Navigator.push(
                                                 context,

@@ -12,6 +12,9 @@ import '../../widgets/guest_auth_prompt.dart';
 import '../../utils/minimum_order_helper.dart';
 import 'address_screen.dart';
 import 'payment_screen.dart';
+import 'order_placed_screen.dart';
+import '../../providers/order_provider.dart';
+import '../../utils/whatsapp_helper.dart';
 
 class CartScreen extends StatefulWidget {
   final Product? buyNowProduct;
@@ -32,6 +35,8 @@ class _CartScreenState extends State<CartScreen> {
   String? _appliedCouponCode;
   double _appliedDiscountAmount = 0.0;
   String? _appliedCouponTitle;
+  String _selectedPaymentMethod = 'Google Pay UPI';
+  bool _isBooking = false;
 
   Map<String, dynamic> _getProductPricing(Product product) {
     double origPrice = product.originalPrice;
@@ -1241,6 +1246,281 @@ class _CartScreenState extends State<CartScreen> {
     );
   }
 
+  void _showPaymentMethodSelector(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "Select Payment Option",
+                    style: GoogleFonts.outfit(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 20, color: Colors.grey),
+                    onPressed: () => Navigator.pop(ctx),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _buildPaymentSelectorTile(
+                title: "Google Pay UPI",
+                subtitle: "Pay instantly using UPI apps (GPay / PhonePe / Paytm)",
+                icon: Icons.account_balance_wallet_rounded,
+                iconColor: const Color(0xFFFF8C00),
+                isSelected: _selectedPaymentMethod == 'Google Pay UPI',
+                onTap: () {
+                  setState(() {
+                    _selectedPaymentMethod = 'Google Pay UPI';
+                  });
+                  Navigator.pop(ctx);
+                },
+              ),
+              const SizedBox(height: 12),
+              _buildPaymentSelectorTile(
+                title: "Continue on WhatsApp",
+                subtitle: "Direct order booking & confirmation on WhatsApp",
+                icon: Icons.chat_bubble_rounded,
+                iconColor: const Color(0xFF25D366),
+                isSelected: _selectedPaymentMethod == 'Continue on WhatsApp',
+                onTap: () {
+                  setState(() {
+                    _selectedPaymentMethod = 'Continue on WhatsApp';
+                  });
+                  Navigator.pop(ctx);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPaymentSelectorTile({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color iconColor,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? iconColor.withOpacity(0.06) : Colors.grey[50],
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected ? iconColor : Colors.grey[200]!,
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: iconColor.withOpacity(0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: iconColor, size: 20),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.outfit(
+                      fontSize: 11,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+              color: isSelected ? iconColor : Colors.grey[400],
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleWhatsAppBooking({
+    required BuildContext context,
+    required AuthProvider auth,
+    required CartProvider cart,
+    required OrderProvider orderProvider,
+    required Address selectedAddress,
+    required double totalMrp,
+    required double deliveryCharge,
+    required double toPay,
+    required bool isBuyNow,
+  }) async {
+    final token = auth.user?.token;
+    if (token == null) {
+      showGuestAuthPrompt(context, "Please log in to book your order.");
+      return;
+    }
+
+    setState(() => _isBooking = true);
+
+    try {
+      final orderItems = isBuyNow
+          ? [
+              {
+                'name': widget.buyNowProduct!.name,
+                'qty': _buyNowQty,
+                'image': widget.buyNowProduct!.image,
+                'price': widget.buyNowProduct!.price,
+                'originalPrice': widget.buyNowProduct!.originalPrice > 0 ? widget.buyNowProduct!.originalPrice : widget.buyNowProduct!.price,
+                'product': widget.buyNowProduct!.id,
+              }
+            ]
+          : cart.items.values.map((item) => {
+              'name': item.product.name,
+              'qty': item.quantity,
+              'image': item.product.image,
+              'price': item.product.price,
+              'originalPrice': item.product.originalPrice > 0 ? item.product.originalPrice : item.product.price,
+              'product': item.product.id,
+            }).toList();
+
+      final orderData = {
+        'orderItems': orderItems,
+        'shippingAddress': selectedAddress.formattedAddress,
+        'paymentMethod': 'WhatsApp',
+        'itemsPrice': totalMrp,
+        'taxPrice': 0.0,
+        'shippingPrice': deliveryCharge,
+        'discountAmount': _appliedDiscountAmount,
+        'discountReason': _appliedCouponCode,
+        'totalPrice': toPay,
+      };
+
+      final orderId = await orderProvider.createOrder(orderData, token);
+
+      if (orderId != null) {
+        if (!isBuyNow) {
+          cart.clear();
+        }
+
+        final displayOrderId = (orderId.length >= 4)
+            ? "FKO${orderId.substring(orderId.length - 4).toUpperCase()}"
+            : "FKO$orderId";
+
+        await WhatsAppHelper.launchOrderPlacedNotice(
+          orderId: displayOrderId,
+          rawId: orderId,
+          customerName: auth.user?.name ?? "Customer",
+          phone: auth.user?.phone ?? "",
+          totalAmount: toPay,
+          address: selectedAddress.formattedAddress,
+          items: orderItems,
+          paymentStatus: "WhatsApp Booking",
+        );
+
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => OrderPlacedScreen(
+                orderId: orderId,
+                toPay: toPay,
+              ),
+            ),
+          );
+        }
+      } else {
+        final itemsSummary = orderItems
+            .map((i) => " • ${i['name']} (x${i['qty']}) - ₹${((i['price'] as num) * (i['qty'] as num)).toStringAsFixed(0)}")
+            .join("\n");
+
+        final buffer = StringBuffer();
+        buffer.writeln("🎉 *NEW ORDER BOOKING ON FESTIVEKART* 🎉");
+        buffer.writeln("--------------------------------------");
+        buffer.writeln("👤 *Customer Name:* ${auth.user?.name ?? 'Customer'}");
+        buffer.writeln("📞 *Phone:* ${auth.user?.phone ?? ''}");
+        buffer.writeln("💰 *Total Amount:* ₹${toPay.toStringAsFixed(0)}");
+        buffer.writeln("💳 *Payment Status:* WHATSAPP BOOKING");
+        buffer.writeln("📍 *Delivery Address:* ${selectedAddress.formattedAddress}");
+        buffer.writeln();
+        buffer.writeln("🛒 *Ordered Items:*");
+        buffer.writeln(itemsSummary);
+        buffer.writeln();
+        buffer.writeln("Please confirm my order booking and share payment/delivery updates. Thank you! 🎆");
+
+        await WhatsAppHelper.launchWhatsApp(message: buffer.toString());
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(orderProvider.errorMessage ?? "Connecting to WhatsApp..."),
+              backgroundColor: const Color(0xFF25D366),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint("Error during WhatsApp booking: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: $e")),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isBooking = false);
+      }
+    }
+  }
+
   Widget _buildAddressSection(BuildContext context, Address? selectedAddress, double totalMrp, double deliveryCharge, double toPay) {
     return Container(
       decoration: BoxDecoration(
@@ -1322,15 +1602,21 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   Widget _buildPaymentStickyBar(BuildContext context, Address? selectedAddress, double totalMrp, double deliveryCharge, double toPay) {
+    final bool isWhatsApp = _selectedPaymentMethod == 'Continue on WhatsApp';
+    final String buttonLabel = isWhatsApp ? "Book" : "Place Order";
+
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              Column(
+          InkWell(
+            onTap: () => _showPaymentMethodSelector(context),
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -1345,8 +1631,19 @@ class _CartScreenState extends State<CartScreen> {
                   const SizedBox(height: 2),
                   Row(
                     children: [
+                      if (isWhatsApp) ...[
+                        Container(
+                          width: 8,
+                          height: 8,
+                          margin: const EdgeInsets.only(right: 6),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF25D366),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ],
                       Text(
-                        "Google Pay UPI",
+                        isWhatsApp ? "Continue on WhatsApp" : "Google Pay UPI",
                         style: GoogleFonts.outfit(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
@@ -1358,7 +1655,7 @@ class _CartScreenState extends State<CartScreen> {
                   ),
                 ],
               ),
-            ],
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -1369,43 +1666,67 @@ class _CartScreenState extends State<CartScreen> {
               ),
               elevation: 0,
             ),
-            onPressed: () {
-              final auth = Provider.of<AuthProvider>(context, listen: false);
-              if (auth.isGuest) {
-                showGuestAuthPrompt(context, "Please log in or register to place your order.");
-                return;
-              }
-              // Validate ₹4,500 minimum order requirement
-              if (!MinimumOrderHelper.validateAndShowNotice(context, totalMrp)) {
-                return;
-              }
-              if (selectedAddress == null) {
-                final isWeb = MediaQuery.of(context).size.width > 800;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Text("Please select a delivery address first"),
-                    backgroundColor: Colors.redAccent,
-                    behavior: SnackBarBehavior.floating,
-                    width: isWeb ? 400 : null,
-                  ),
-                );
-                return;
-              }
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => PaymentScreen(
-                    selectedAddress: selectedAddress,
-                    totalMrp: totalMrp,
-                    discount: _appliedDiscountAmount,
-                    deliveryCharge: deliveryCharge,
-                    toPay: toPay,
-                    buyNowProduct: widget.buyNowProduct,
-                    buyNowQuantity: _buyNowQty,
-                  ),
-                ),
-              );
-            },
+            onPressed: _isBooking
+                ? null
+                : () {
+                    final auth = Provider.of<AuthProvider>(context, listen: false);
+                    if (auth.isGuest) {
+                      showGuestAuthPrompt(
+                        context,
+                        isWhatsApp
+                            ? "Please log in or register to book your order."
+                            : "Please log in or register to place your order.",
+                      );
+                      return;
+                    }
+                    // Validate ₹4,500 minimum order requirement
+                    if (!MinimumOrderHelper.validateAndShowNotice(context, totalMrp)) {
+                      return;
+                    }
+                    if (selectedAddress == null) {
+                      final isWeb = MediaQuery.of(context).size.width > 800;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text("Please select a delivery address first"),
+                          backgroundColor: Colors.redAccent,
+                          behavior: SnackBarBehavior.floating,
+                          width: isWeb ? 400 : null,
+                        ),
+                      );
+                      return;
+                    }
+
+                    if (isWhatsApp) {
+                      final cart = Provider.of<CartProvider>(context, listen: false);
+                      final orderProvider = Provider.of<OrderProvider>(context, listen: false);
+                      _handleWhatsAppBooking(
+                        context: context,
+                        auth: auth,
+                        cart: cart,
+                        orderProvider: orderProvider,
+                        selectedAddress: selectedAddress,
+                        totalMrp: totalMrp,
+                        deliveryCharge: deliveryCharge,
+                        toPay: toPay,
+                        isBuyNow: widget.buyNowProduct != null,
+                      );
+                    } else {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => PaymentScreen(
+                            selectedAddress: selectedAddress,
+                            totalMrp: totalMrp,
+                            discount: _appliedDiscountAmount,
+                            deliveryCharge: deliveryCharge,
+                            toPay: toPay,
+                            buyNowProduct: widget.buyNowProduct,
+                            buyNowQuantity: _buyNowQty,
+                          ),
+                        ),
+                      );
+                    }
+                  },
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -1434,16 +1755,24 @@ class _CartScreenState extends State<CartScreen> {
                 const SizedBox(width: 12),
                 Container(width: 1, height: 24, color: Colors.white30),
                 const SizedBox(width: 12),
-                Text(
-                  "Place Order",
-                  style: GoogleFonts.outfit(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
+                if (_isBooking)
+                  const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  )
+                else ...[
+                  Text(
+                    buttonLabel,
+                    style: GoogleFonts.outfit(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 4),
-                const Icon(Icons.arrow_right, color: Colors.white),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.arrow_right, color: Colors.white),
+                ],
               ],
             ),
           ),

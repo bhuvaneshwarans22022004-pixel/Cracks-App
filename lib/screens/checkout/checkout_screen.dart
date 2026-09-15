@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../auth/login_screen.dart';
 import '../../widgets/profile_completion_sheet.dart';
 
 class CheckoutScreen extends StatefulWidget {
@@ -91,6 +92,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   height: 55,
                   child: ElevatedButton(
                     onPressed: () async {
+                      // Guest (not logged in) → push to login before placing order
+                      if (!auth.isAuthenticated) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const LoginScreen()),
+                        );
+                        return;
+                      }
                       if (auth.user?.phone == null || auth.user!.phone!.isEmpty) {
                         ProfileCompletionSheet.show(
                           context,

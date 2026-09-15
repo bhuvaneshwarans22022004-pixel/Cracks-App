@@ -38,6 +38,7 @@ class ProfileCompletionSheet extends StatefulWidget {
 class _ProfileCompletionSheetState extends State<ProfileCompletionSheet> {
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
+  final _nameController = TextEditingController();
   final _otpController = TextEditingController();
   final _socialAuth = SocialAuthService();
 
@@ -49,6 +50,7 @@ class _ProfileCompletionSheetState extends State<ProfileCompletionSheet> {
   void dispose() {
     _phoneController.dispose();
     _emailController.dispose();
+    _nameController.dispose();
     _otpController.dispose();
     super.dispose();
   }
@@ -151,9 +153,18 @@ class _ProfileCompletionSheetState extends State<ProfileCompletionSheet> {
     }
   }
 
-  // 3. Save Email address directly for phone-only registered users
-  Future<void> _saveEmail() async {
+  // 3. Save Email address and Name directly for phone-only registered users
+  Future<void> _saveProfile() async {
+    final name = _nameController.text.trim();
     final email = _emailController.text.trim();
+
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please enter your name")),
+      );
+      return;
+    }
+
     if (email.isEmpty || !email.contains('@')) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please enter a valid email address")),
@@ -168,7 +179,7 @@ class _ProfileCompletionSheetState extends State<ProfileCompletionSheet> {
     try {
       final auth = Provider.of<AuthProvider>(context, listen: false);
       final success = await auth.updateProfile(
-        auth.user!.name,
+        name,
         auth.user!.phone,
         email: email,
       );
@@ -179,8 +190,14 @@ class _ProfileCompletionSheetState extends State<ProfileCompletionSheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Failed to save email: ${e.toString()}")),
+          SnackBar(content: Text("Failed to save profile: ${e.toString()}")),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
       }
     }
   }
@@ -381,6 +398,91 @@ class _ProfileCompletionSheetState extends State<ProfileCompletionSheet> {
                 ),
               ]
             ] else ...[
+              // Name input field
+              TextField(
+                controller: _nameController,
+                keyboardType: TextInputType.name,
+                textCapitalization: TextCapitalization.words,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: "Enter Full Name",
+                  hintStyle: const TextStyle(color: Colors.white38),
+                  prefixIcon: const Icon(Icons.person_outline_rounded, color: Color(0xFFFF9F1C)),
+                  filled: true,
+                  fillColor: Colors.white.withOpacity(0.06),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: Colors.white.withOpacity(0.12)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: Colors.white.withOpacity(0.12)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(color: Color(0xFFFF9F1C), width: 1.8),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Email input field
+              TextField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: "Enter Email Address",
+                  hintStyle: const TextStyle(color: Colors.white38),
+                  prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFFFF9F1C)),
+                  filled: true,
+                  fillColor: Colors.white.withOpacity(0.06),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: Colors.white.withOpacity(0.12)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: Colors.white.withOpacity(0.12)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(color: Color(0xFFFF9F1C), width: 1.8),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Save & Sync Button
+              SizedBox(
+                height: 52,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFF9F1C),
+                    foregroundColor: const Color(0xFF1E0A35),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  onPressed: _loading ? null : _saveProfile,
+                  child: _loading 
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF1E0A35)))
+                    : const Text("Save & Sync Profile", style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Divider
+              Row(
+                children: [
+                  Expanded(child: Divider(color: Colors.white.withOpacity(0.15))),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text("OR", style: GoogleFonts.outfit(color: Colors.white38, fontSize: 13, fontWeight: FontWeight.bold)),
+                  ),
+                  Expanded(child: Divider(color: Colors.white.withOpacity(0.15))),
+                ],
+              ),
+              const SizedBox(height: 20),
+
               // Prompt for Google account linking (most low-friction way to add email!)
               ElevatedButton.icon(
                 icon: Image.asset('assets/images/google_logo.png', width: 22, height: 22, errorBuilder: (c, e, s) => const Icon(Icons.email, color: Colors.white)),

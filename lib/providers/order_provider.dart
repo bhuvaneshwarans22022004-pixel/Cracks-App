@@ -31,6 +31,28 @@ class OrderProvider with ChangeNotifier {
     }
   }
 
+  /// Fetch a single order by ID — returns updated Order with invoiceUrl, or null.
+  Future<Order?> fetchOrderById(String orderId, String token) async {
+    try {
+      final response = await ApiService.get('orders/$orderId', token: token);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final updatedOrder = Order.fromJson(data as Map<String, dynamic>);
+        final idx = _orders.indexWhere((o) => o.id == orderId);
+        if (idx >= 0) {
+          _orders[idx] = updatedOrder;
+        } else {
+          _orders.insert(0, updatedOrder);
+        }
+        notifyListeners();
+        return updatedOrder;
+      }
+    } catch (e) {
+      print('[OrderProvider] fetchOrderById error: $e');
+    }
+    return null;
+  }
+
   Future<String?> createOrder(Map<String, dynamic> orderData, String token) async {
     _errorMessage = null;
     try {
@@ -40,7 +62,10 @@ class OrderProvider with ChangeNotifier {
       print("[Order API] createOrder body: ${response.body}");
       final Map<String, dynamic> data = jsonDecode(response.body);
       if (response.statusCode == 201) {
-        return data['_id'] as String?;
+        final newOrder = Order.fromJson(data);
+        _orders.insert(0, newOrder);
+        notifyListeners();
+        return newOrder.id;
       } else {
         _errorMessage = data['message'] ?? 'Failed to place order';
         return null;

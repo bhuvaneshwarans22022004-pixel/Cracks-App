@@ -57,6 +57,9 @@ class AddressProvider with ChangeNotifier {
   Address? get selectedAddress => _selectedAddress ?? (_addresses.isNotEmpty ? _addresses.first : null);
 
   Future<void> fetchAddresses(String token) async {
+    // Skip if no valid token (guest user)
+    if (token.isEmpty) return;
+
     _isLoading = true;
     notifyListeners();
 
@@ -74,39 +77,63 @@ class AddressProvider with ChangeNotifier {
     }
   }
 
-  Future<void> addAddress(Address address, String token) async {
+  Future<bool> addAddress(Address address, String token) async {
     try {
-      final response = await ApiService.post('addresses', address.toJson(), token: token);
-      if (response.statusCode == 201) {
-        final newAddress = Address.fromJson(jsonDecode(response.body));
-        _addresses.add(newAddress);
-        if (_selectedAddress == null) {
-          _selectedAddress = newAddress;
+      if (token.isNotEmpty) {
+        final response = await ApiService.post('addresses', address.toJson(), token: token);
+        if (response.statusCode == 201) {
+          final newAddress = Address.fromJson(jsonDecode(response.body));
+          _addresses.removeWhere((item) => item.id == address.id || item.id == newAddress.id);
+          _addresses.add(newAddress);
+          _selectedAddress = newAddress; // auto-select the newly added address
+          notifyListeners();
+          return true;
+        } else {
+          print('Server returned error adding address: ${response.statusCode} - ${response.body}');
         }
-        notifyListeners();
       }
     } catch (e) {
-      print('Error adding address: $e');
+      print('Error adding address to server: $e');
     }
+    // Fallback: Always preserve address locally so user is never blocked from placing order
+    _addresses.removeWhere((item) => item.id == address.id);
+    _addresses.add(address);
+    _selectedAddress = address;
+    notifyListeners();
+    return true;
   }
 
-  Future<void> updateAddress(String id, Address address, String token) async {
+    Future<void> updateAddress(String id, Address address, String token) async {
     try {
-      final response = await ApiService.put('addresses/$id', address.toJson(), token: token);
-      if (response.statusCode == 200) {
-        final updatedAddress = Address.fromJson(jsonDecode(response.body));
-        final index = _addresses.indexWhere((item) => item.id == id);
-        if (index != -1) {
-          _addresses[index] = updatedAddress;
+      if (token.isNotEmpty) {
+        final response = await ApiService.put('addresses/$id', address.toJson(), token: token);
+        if (response.statusCode == 200) {
+          final updatedAddress = Address.fromJson(jsonDecode(response.body));
+          final index = _addresses.indexWhere((item) => item.id == id);
+          if (index != -1) {
+            _addresses[index] = updatedAddress;
+          }
+          if (_selectedAddress?.id == id) {
+            _selectedAddress = updatedAddress;
+          }
+          notifyListeners();
+          return;
         }
-        if (_selectedAddress?.id == id) {
-          _selectedAddress = updatedAddress;
-        }
-        notifyListeners();
       }
     } catch (e) {
-      print('Error updating address: $e');
+      print('Error updating address on server: $e');
     }
+    // Fallback: update locally
+    final index = _addresses.indexWhere((item) => item.id == id);
+    if (index != -1) {
+      _addresses[index] = address;
+    } else {
+      _addresses.add(address);
+    }
+    if (_selectedAddress?.id == id) {
+      _selectedAddress = address;
+    }
+    notifyListeners();
   }
 
   Future<void> removeAddress(String id, String token) async {

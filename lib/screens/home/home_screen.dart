@@ -33,6 +33,7 @@ import '../../widgets/custom_image.dart';
 import '../../models/product.dart';
 import '../product/product_detail_screen.dart';
 import '../offer/offer_detail_screen.dart';
+import '../auth/login_screen.dart';
 import '../../utils/whatsapp_helper.dart';
 
 
@@ -177,6 +178,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _setSelectedIndex(int index) {
     if (!mounted) return;
+    // Guard Orders (2) and Profile (3): require login
+    if (index == 2 || index == 3) {
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      if (!auth.isAuthenticated) { _showLoginPrompt(); return; }
+    }
     setState(() {
       _selectedIndex = index;
     });
@@ -508,6 +514,73 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+
+  /// Shows a bottom-sheet login prompt for unauthenticated guests.
+  void _showLoginPrompt() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 36),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40, height: 4,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const Icon(Icons.lock_outline_rounded, size: 52, color: Color(0xFFFF8C00)),
+              const SizedBox(height: 14),
+              const Text(
+                'Login Required',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A)),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Log in to view your orders and profile.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+              const SizedBox(height: 28),
+              SizedBox(
+                width: double.infinity, height: 52,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFF8C00),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
+                  },
+                  child: const Text(
+                    'Login / Sign Up',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Continue Browsing', style: TextStyle(color: Colors.grey, fontSize: 14)),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final productProvider = Provider.of<ProductProvider>(context);
@@ -563,6 +636,14 @@ class _HomeScreenState extends State<HomeScreen> {
         controller: _tabSwipePageController,
         onPageChanged: (index) {
           if (_selectedIndex != index) {
+            // Guard protected tabs on swipe
+            if (index == 2 || index == 3) {
+              final auth = Provider.of<AuthProvider>(context, listen: false);
+              if (!auth.isAuthenticated) {
+                Future.microtask(() { if (_tabSwipePageController.hasClients) _tabSwipePageController.jumpToPage(_selectedIndex); });
+                _showLoginPrompt(); return;
+              }
+            }
             setState(() {
               _selectedIndex = index;
             });

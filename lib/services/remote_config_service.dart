@@ -23,15 +23,20 @@ class RemoteConfigService {
       }
 
       if (!isInitialized) {
+        // Firebase already initialized in main.dart; this is a safety fallback
         await Firebase.initializeApp(
-          options: const FirebaseOptions(
-            apiKey: "AIzaSyAk8s3xuL_jO5NZAygrWImiO8tfyNU7XYQ",
+          options: FirebaseOptions(
+            apiKey: kIsWeb
+                ? "AIzaSyBkVKhTQyRBnmgU3sKmjsnKRyLalRQc8QQ"
+                : "AIzaSyAk8s3xuL_jO5NZAygrWImiO8tfyNU7XYQ",
+            authDomain: kIsWeb ? "festivekart-101.firebaseapp.com" : null,
             appId: kIsWeb
                 ? "1:734262498360:web:c73f1f1053f1f615bf82cd"
                 : "1:734262498360:android:6eeb3a130fc5fac0bf82cd",
             messagingSenderId: "734262498360",
             projectId: "festivekart-101",
             storageBucket: "festivekart-101.firebasestorage.app",
+            measurementId: kIsWeb ? "G-S8VHK4MQ9B" : null,
           ),
         );
       }

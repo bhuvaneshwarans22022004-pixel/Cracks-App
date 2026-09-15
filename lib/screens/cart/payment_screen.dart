@@ -12,6 +12,7 @@ import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
 import 'order_placed_screen.dart';
 import '../../utils/constants.dart';
+import '../../utils/whatsapp_helper.dart';
 import '../../utils/minimum_order_helper.dart';
 
 class PaymentScreen extends StatefulWidget {
@@ -293,9 +294,15 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           // Options list
                           _buildPaymentOption(
                             method: 'UPI',
-                            title: 'UPI',
+                            title: 'Google Pay UPI',
                             subtitle: '(GPay, PhonePe, Paytm)',
                             icon: Icons.account_balance_wallet_rounded,
+                          ),
+                          _buildPaymentOption(
+                            method: 'WhatsApp',
+                            title: 'Continue on WhatsApp',
+                            subtitle: 'Instant booking & order confirmation on WhatsApp',
+                            icon: Icons.chat_bubble_rounded,
                           ),
 
                           const SizedBox(height: 40),
@@ -328,8 +335,18 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                         return;
                                       }
 
-                                      final token = auth.user?.token;
-                                      if (token == null) {
+                                      String? token = auth.user?.token;
+                                      if ((token == null || token.isEmpty) && widget.selectedAddress.phoneNumber.isNotEmpty) {
+                                        final autoLoggedIn = await auth.checkoutAuth(
+                                          name: widget.selectedAddress.type.isNotEmpty ? widget.selectedAddress.type : 'Customer',
+                                          phone: widget.selectedAddress.phoneNumber,
+                                        );
+                                        if (autoLoggedIn && auth.user?.token != null) {
+                                          token = auth.user!.token;
+                                        }
+                                      }
+
+                                      if (token == null || token.isEmpty) {
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           const SnackBar(content: Text("Please login to place your order")),
                                         );
@@ -376,8 +393,24 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                       if (orderId != null) {
                                         if (mounted) {
                                           if (widget.buyNowProduct == null) {
-                                            cart.clear();
-                                          }
+                                               cart.clear();
+                                             }
+
+                                             if (_selectedMethod == 'WhatsApp') {
+                                               final displayOrderId = (orderId.length >= 4)
+                                                   ? "FKO${orderId.substring(orderId.length - 4).toUpperCase()}"
+                                                   : "FKO$orderId";
+                                               WhatsAppHelper.launchOrderPlacedNotice(
+                                                 orderId: displayOrderId,
+                                                 rawId: orderId,
+                                                 customerName: auth.user?.name ?? "Customer",
+                                                 phone: auth.user?.phone ?? "",
+                                                 totalAmount: widget.toPay,
+                                                 address: widget.selectedAddress.formattedAddress,
+                                                 items: orderItems,
+                                                 paymentStatus: "WhatsApp Booking",
+                                               );
+                                             }
                                           Navigator.pushReplacement(
                                             context,
                                             MaterialPageRoute(

@@ -14,10 +14,19 @@ class OrderTrackingScreen extends StatelessWidget {
   const OrderTrackingScreen({super.key, required this.order});
 
   String get displayOrderId {
-    if (order.id.length >= 8) {
-      return "FK${order.id.substring(order.id.length - 8).toUpperCase()}";
+    if (order.invoiceNo != null && order.invoiceNo!.isNotEmpty) {
+      return order.invoiceNo!;
     }
-    return "FK${order.id.toUpperCase()}";
+    if (order.orderNo != null && order.orderNo!.isNotEmpty) {
+      if (order.orderNo!.startsWith('FKO')) {
+        return order.orderNo!.replaceFirst('FKO', 'INV-${order.createdAt.year}-');
+      }
+      return order.orderNo!;
+    }
+    if (order.id.length >= 4) {
+      return "INV-${order.createdAt.year}-${order.id.substring(order.id.length - 4).toUpperCase()}";
+    }
+    return "INV-${order.createdAt.year}-${order.id.toUpperCase()}";
   }
 
   int getActiveStageIndex(String status) {

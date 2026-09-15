@@ -18,7 +18,7 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://accounts.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https: wss:;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://accounts.google.com https://www.google.com https://www.recaptcha.net https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; frame-src 'self' https://www.google.com https://www.recaptcha.net https://festivekart-101.firebaseapp.com https://festivekart-101.web.app https://festivekart.in; connect-src 'self' https: wss:;">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0">
   <meta name="description" content="FestiveKart - Premium crackers, gifts and decorations for all your celebrations.">
   <meta name="google-site-verification" content="wu2_J_Fv5tDLG00HwUCIdbjFYORTsd2l1jkK1rI651E" />
@@ -27,7 +27,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="FestiveKart">
-  <link rel="apple-touch-icon" href="icons/Icon-192.PNG">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
@@ -37,10 +37,12 @@
   <!-- Google Sign-In & Identity Services for Web -->
   <meta name="google-signin-client_id" content="734262498360-kaa955ci39o54d2nopts87m4m1i2d3ok.apps.googleusercontent.com">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <!-- Firebase JS SDK (Compat version matching Flutter plugin fallbacks, deferred to prevent render-blocking) -->
-  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js" defer></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js" defer></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-remote-config-compat.js" defer></script>
+  <!-- Firebase JS SDK - loaded synchronously (NOT deferred) so it is ready before flutter_bootstrap.js (async) executes.
+       Using defer caused race condition: flutter_bootstrap.js (async) could run before Firebase JS loaded, 
+       causing "Null check operator used on a null value" in Firebase.initializeApp() -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-remote-config-compat.js"></script>
 </head>
 <body>
 
@@ -73,6 +75,22 @@
       }
     });
     observer.observe(document.body, { childList: true, subtree: true });
+  </script>
+
+  <script>
+    // Clear stale service worker caches to prevent old builds from being served after new deployments
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        registrations.forEach(function(reg) {
+          if (reg.waiting) {
+            reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+          }
+        });
+      });
+      caches.keys().then(function(names) {
+        names.forEach(function(name) { caches.delete(name); });
+      });
+    }
   </script>
 
   <script src="flutter_bootstrap.js" async></script>

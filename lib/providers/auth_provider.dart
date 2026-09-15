@@ -60,6 +60,29 @@ class AuthProvider with ChangeNotifier {
     return false;
   }
 
+  
+  Future<bool> checkoutAuth({required String name, required String phone, String? email}) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final user = await _authService.checkoutAuth(name: name, phone: phone, email: email);
+      if (user != null && user.token != null) {
+        _user = user;
+        _isGuestMode = false;
+        await StorageService.saveToken(user.token!);
+        notifyListeners();
+        return true;
+      }
+    } catch (e) {
+      print('Error in checkoutAuth provider: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+    return false;
+  }
+
   Future<void> logout() async {
     _user = null;
     _isGuestMode = false;
@@ -200,13 +223,13 @@ class AuthProvider with ChangeNotifier {
     return false;
   }
 
-  Future<bool> loginWithFirebaseToken(String idToken) async {
+  Future<bool> loginWithFirebaseToken(String idToken, {String? name}) async {
     _isLoading = true;
     _isGuestMode = false;
     notifyListeners();
 
     try {
-      final user = await _authService.firebaseLogin(idToken);
+      final user = await _authService.firebaseLogin(idToken, name: name);
       if (user != null) {
         _user = user;
         await StorageService.saveToken(user.token!);

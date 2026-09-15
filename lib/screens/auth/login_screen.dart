@@ -22,6 +22,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _otpController = TextEditingController();
   final _socialAuth = SocialAuthService();
@@ -63,6 +64,7 @@ class _LoginScreenState extends State<LoginScreen> {
     _otpTimer?.cancel();
     _emailController.dispose();
     _passwordController.dispose();
+    _nameController.dispose();
     _phoneController.dispose();
     _otpController.dispose();
     super.dispose();
@@ -77,7 +79,8 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final idToken = await _socialAuth.signInWithGoogle();
       if (idToken != null) {
-        final success = await auth.loginWithFirebaseToken(idToken);
+        final enteredName = _nameController.text.trim();
+        final success = await auth.loginWithFirebaseToken(idToken, name: enteredName.isNotEmpty ? enteredName : null);
         if (success && mounted) {
           final addressProvider = Provider.of<AddressProvider>(context, listen: false);
           if (auth.user!.token != null) {
@@ -117,6 +120,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // 2. Phone OTP: Send verification code to device
   Future<void> _sendOTP() async {
+    final name = _nameController.text.trim();
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please enter your name")),
+      );
+      return;
+    }
     final phone = _phoneController.text.trim();
     if (phone.isEmpty || phone.length < 10) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -181,31 +191,32 @@ class _LoginScreenState extends State<LoginScreen> {
         smsCode: code,
       );
 
-      if (idToken != null && mounted) {
-        final auth = Provider.of<AuthProvider>(context, listen: false);
-        final success = await auth.loginWithFirebaseToken(idToken);
-        
-        if (success && mounted) {
-          final addressProvider = Provider.of<AddressProvider>(context, listen: false);
-          if (auth.user!.token != null) {
-            addressProvider.fetchAddresses(auth.user!.token!);
-          }
+        if (idToken != null && mounted) {
+          final auth = Provider.of<AuthProvider>(context, listen: false);
+          final enteredName = _nameController.text.trim();
+          final success = await auth.loginWithFirebaseToken(idToken, name: enteredName.isNotEmpty ? enteredName : null);
+          
+          if (success && mounted) {
+            final addressProvider = Provider.of<AddressProvider>(context, listen: false);
+            if (auth.user!.token != null) {
+              addressProvider.fetchAddresses(auth.user!.token!);
+            }
 
-          // Check if email address is missing (Phone-only registrations)
-          if (auth.user!.email == null || auth.user!.email!.isEmpty) {
-            ProfileCompletionSheet.show(
-              context,
-              isPhoneOnly: false,
-              onCompleted: () {
-                // Done linking email, proceed
-              },
+            // Check if email address is missing (Phone-only registrations)
+            if (auth.user!.email == null || auth.user!.email!.isEmpty) {
+              ProfileCompletionSheet.show(
+                context,
+                isPhoneOnly: false,
+                onCompleted: () {
+                  // Done linking email, proceed
+                },
+              );
+            }
+          } else if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Server verification failed.")),
             );
           }
-        } else if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Server verification failed.")),
-          );
-        }
       }
     } catch (e) {
       if (mounted) {
@@ -464,27 +475,27 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          // const SizedBox(height: 20),
 
           // Guest mode button
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Colors.white24, width: 1.5),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              ),
-              onPressed: () {
-                auth.loginAsGuest();
-              },
-              child: Text(
-                "Browse as Guest",
-                style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ),
+          // SizedBox(
+          //   width: double.infinity,
+          //   height: 52,
+          //   child: OutlinedButton(
+          //     style: OutlinedButton.styleFrom(
+          //       side: const BorderSide(color: Colors.white24, width: 1.5),
+          //       foregroundColor: Colors.white,
+          //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          //     ),
+          //     onPressed: () {
+          //       auth.loginAsGuest();
+          //     },
+          //     child: Text(
+          //       "Browse as Guest",
+          //       style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold),
+          //     ),
+          //   ),
+          // ),
         ],
         const SizedBox(height: 15),
       ],
@@ -515,6 +526,35 @@ class _LoginScreenState extends State<LoginScreen> {
           ],
         ),
         const SizedBox(height: 35),
+
+                // Full Name input textfield
+        TextField(
+          controller: _nameController,
+          keyboardType: TextInputType.name,
+          textCapitalization: TextCapitalization.words,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: "Enter Full Name",
+            hintStyle: const TextStyle(color: Colors.white38),
+            prefixIcon: const Icon(Icons.person_outline_rounded, color: Color(0xFFFF9F1C)),
+            filled: true,
+            fillColor: Colors.white.withOpacity(0.06),
+            contentPadding: const EdgeInsets.symmetric(vertical: 16),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: Colors.white.withOpacity(0.12)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: Colors.white.withOpacity(0.12)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: Color(0xFFFF9F1C), width: 1.8),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
 
         // Phone input textfield
         TextField(

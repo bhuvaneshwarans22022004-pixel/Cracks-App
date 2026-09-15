@@ -1,5 +1,7 @@
 class Order {
   final String id;
+  final String? orderNo;
+  final String? invoiceNo;
   final List<OrderItem> items;
   final double totalAmount;
   final double itemsPrice;
@@ -14,9 +16,12 @@ class Order {
   final String? userPhone;
   final String? userEmail;
   final String? userName;
+  final String? invoiceUrl;
 
   Order({
     required this.id,
+    this.orderNo,
+    this.invoiceNo,
     required this.items,
     required this.totalAmount,
     this.itemsPrice = 0.0,
@@ -31,11 +36,14 @@ class Order {
     this.userPhone,
     this.userEmail,
     this.userName,
+    this.invoiceUrl,
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
     return Order(
       id: json['_id'],
+      orderNo: json['orderNo'],
+      invoiceNo: json['invoiceNo'],
       items: (json['orderItems'] as List).map((i) => OrderItem.fromJson(i)).toList(),
       totalAmount: json['totalPrice'] != null ? json['totalPrice'].toDouble() : 0.0,
       itemsPrice: json['itemsPrice'] != null ? json['itemsPrice'].toDouble() : 0.0,
@@ -50,6 +58,7 @@ class Order {
       userName: json['user'] != null ? (json['user'] is Map ? json['user']['name'] : null) : null,
       userPhone: json['user'] != null ? (json['user'] is Map ? json['user']['phone'] : null) : null,
       userEmail: json['user'] != null ? (json['user'] is Map ? json['user']['email'] : null) : null,
+      invoiceUrl: json['invoiceUrl'] as String?,
     );
   }
 }

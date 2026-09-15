@@ -6,6 +6,28 @@ import '../utils/constants.dart';
 import 'api_service.dart';
 
 class AuthService {
+
+  Future<User?> checkoutAuth({required String name, required String phone, String? email}) async {
+    try {
+      final response = await ApiService.post('auth/checkout-auth', {
+        'name': name,
+        'phone': phone,
+        if (email != null && email.isNotEmpty) 'email': email,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        final userJson = data['user'] ?? data;
+        return User.fromJson(userJson, token: data['token']);
+      } else {
+        print('checkoutAuth failed: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      print('Error calling checkoutAuth: $e');
+    }
+    return null;
+  }
+
   Future<User?> login(String email, String password) async {
     final response = await ApiService.post('auth/login', {
       'email': email,
@@ -62,10 +84,14 @@ class AuthService {
     return null;
   }
 
-  Future<User?> firebaseLogin(String idToken) async {
-    final response = await ApiService.post('auth/firebase-login', {
+    Future<User?> firebaseLogin(String idToken, {String? name}) async {
+    final Map<String, dynamic> body = {
       'idToken': idToken,
-    });
+    };
+    if (name != null && name.trim().isNotEmpty) {
+      body['name'] = name.trim();
+    }
+    final response = await ApiService.post('auth/firebase-login', body);
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);

@@ -9,10 +9,19 @@ class InvoiceScreen extends StatelessWidget {
   const InvoiceScreen({super.key, required this.order});
 
   String get displayOrderId {
-    if (order.id.length >= 8) {
-      return "FK${order.id.substring(order.id.length - 8).toUpperCase()}";
+    if (order.invoiceNo != null && order.invoiceNo!.isNotEmpty) {
+      return order.invoiceNo!;
     }
-    return "FK${order.id.toUpperCase()}";
+    if (order.orderNo != null && order.orderNo!.isNotEmpty) {
+      if (order.orderNo!.startsWith('FKO')) {
+        return order.orderNo!.replaceFirst('FKO', 'INV-${order.createdAt.year}-');
+      }
+      return order.orderNo!;
+    }
+    if (order.id.length >= 4) {
+      return "INV-${order.createdAt.year}-${order.id.substring(order.id.length - 4).toUpperCase()}";
+    }
+    return "INV-${order.createdAt.year}-${order.id.toUpperCase()}";
   }
 
   @override
@@ -85,43 +94,40 @@ class InvoiceScreen extends StatelessWidget {
                       children: [
                         // Header Logo & Branding
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          mainAxisAlignment: MainAxisAlignment.start,
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Image.asset(
                               'assets/images/logo.png',
-                              height: 48,
+                              height: 72,
                               fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) => Text(
-                                "FESTIVEKART",
-                                style: GoogleFonts.outfit(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: const Color(0xFFFF8C00),
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
+                              errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
                             ),
-                            Image.asset(
-                              'assets/images/jj.png',
-                              height: 48,
-                              fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) => Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFF8C00).withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  "TAX INVOICE",
+                            const SizedBox(width: 14),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  "Festivekart",
                                   style: GoogleFonts.outfit(
-                                    color: const Color(0xFFFF8C00),
+                                    fontSize: 22,
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 10,
-                                    letterSpacing: 1,
+                                    color: const Color(0xFFFF8C00),
+                                    letterSpacing: 0.8,
                                   ),
                                 ),
-                              ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  "Sivakasi",
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.grey[700],
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),

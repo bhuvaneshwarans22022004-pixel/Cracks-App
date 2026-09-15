@@ -5,6 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/order_provider.dart';
 import '../order/invoice_screen.dart';
 import '../home/home_screen.dart';
+import '../../models/order.dart';
 import '../../utils/whatsapp_helper.dart';
 
 
@@ -33,18 +34,26 @@ class _OrderPlacedScreenState extends State<OrderPlacedScreen> {
     });
   }
 
-  void _autoSendWhatsApp() {
+  Future<void> _autoSendWhatsApp() async {
     if (_hasAutoSentWhatsApp) return;
     _hasAutoSentWhatsApp = true;
 
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final user = auth.user;
     final orderProvider = Provider.of<OrderProvider>(context, listen: false);
+    final token = user?.token ?? '';
 
-    final matchedOrder = orderProvider.orders.firstWhere(
-      (o) => o.id == widget.orderId,
-      orElse: () => null as dynamic,
-    );
+    // Fetch fresh order to get Firebase Storage invoiceUrl
+    Order? freshOrder;
+    if (token.isNotEmpty) {
+      freshOrder = await orderProvider.fetchOrderById(widget.orderId, token);
+    }
+
+    final matchedOrder = freshOrder ??
+        orderProvider.orders.firstWhere(
+          (o) => o.id == widget.orderId,
+          orElse: () => null as dynamic,
+        );
 
     if (matchedOrder != null) {
       final itemsList = matchedOrder.items.map((i) => {
@@ -62,6 +71,7 @@ class _OrderPlacedScreenState extends State<OrderPlacedScreen> {
         address: matchedOrder.shippingAddress,
         items: itemsList,
         paymentStatus: matchedOrder.paymentMethod,
+        invoiceUrl: matchedOrder.invoiceUrl,
       );
     } else {
       WhatsAppHelper.launchWhatsApp(
@@ -71,10 +81,26 @@ class _OrderPlacedScreenState extends State<OrderPlacedScreen> {
   }
 
   String get displayOrderId {
-    if (widget.orderId.length >= 8) {
-      return "FK${widget.orderId.substring(widget.orderId.length - 8).toUpperCase()}";
+    final orderProvider = Provider.of<OrderProvider>(context, listen: false);
+    final matchedOrder = orderProvider.orders.firstWhere(
+      (o) => o.id == widget.orderId,
+      orElse: () => null as dynamic,
+    );
+    if (matchedOrder != null) {
+      if (matchedOrder.invoiceNo != null && matchedOrder.invoiceNo!.isNotEmpty) {
+        return matchedOrder.invoiceNo!;
+      }
+      if (matchedOrder.orderNo != null && matchedOrder.orderNo!.isNotEmpty) {
+        if (matchedOrder.orderNo!.startsWith('FKO')) {
+          return matchedOrder.orderNo!.replaceFirst('FKO', 'INV-${matchedOrder.createdAt.year}-');
+        }
+        return matchedOrder.orderNo!;
+      }
     }
-    return "FK${widget.orderId.toUpperCase()}";
+    if (widget.orderId.length >= 4) {
+      return "FKO${widget.orderId.substring(widget.orderId.length - 4).toUpperCase()}";
+    }
+    return "FKO${widget.orderId.toUpperCase()}";
   }
 
   @override
@@ -271,6 +297,7 @@ class _OrderPlacedScreenState extends State<OrderPlacedScreen> {
                                   address: matchedOrder.shippingAddress,
                                   items: itemsList,
                                   paymentStatus: matchedOrder.paymentMethod,
+                                  invoiceUrl: matchedOrder.invoiceUrl,
                                 );
                               } else {
                                 WhatsAppHelper.launchWhatsApp(

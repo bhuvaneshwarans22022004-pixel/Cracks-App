@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../models/order.dart';
 import '../../providers/order_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../home/home_screen.dart';
@@ -42,11 +43,21 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> with SingleTick
     super.dispose();
   }
 
-  String _formatOrderId(String rawId) {
-    if (rawId.length >= 8) {
-      return "FK${rawId.substring(rawId.length - 8).toUpperCase()}";
+  String _formatOrderId(Order order) {
+    if (order.invoiceNo != null && order.invoiceNo!.isNotEmpty) {
+      return order.invoiceNo!;
     }
-    return "FK${rawId.toUpperCase()}";
+    if (order.orderNo != null && order.orderNo!.isNotEmpty) {
+      if (order.orderNo!.startsWith('FKO')) {
+        return order.orderNo!.replaceFirst('FKO', 'INV-${order.createdAt.year}-');
+      }
+      return order.orderNo!;
+    }
+    final rawId = order.id;
+    if (rawId.length >= 4) {
+      return "INV-${order.createdAt.year}-${rawId.substring(rawId.length - 4).toUpperCase()}";
+    }
+    return "INV-${order.createdAt.year}-${rawId.toUpperCase()}";
   }
 
   Widget _buildOrderList(List<dynamic> orders) {
@@ -72,7 +83,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> with SingleTick
       itemCount: orders.length,
       itemBuilder: (context, index) {
         final order = orders[index];
-        final displayId = _formatOrderId(order.id);
+        final displayId = _formatOrderId(order);
         final formattedDate = DateFormat('dd MMM yyyy').format(order.createdAt);
         final isCancelled = order.status.toLowerCase() == 'cancelled';
 

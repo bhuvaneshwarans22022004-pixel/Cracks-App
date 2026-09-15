@@ -120,7 +120,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
           }
           return loggedIn;
         }),
-        Future.delayed(const Duration(milliseconds: 2000)), // Snappy transition timing
+        Future.delayed(const Duration(milliseconds: 1000)), // Snappy transition timing
       ]);
     });
   }
@@ -135,7 +135,8 @@ class _AuthWrapperState extends State<AuthWrapper> {
         }
         return Consumer<AuthProvider>(
           builder: (context, auth, _) {
-            return auth.isAuthenticated ? const HomeScreen() : const LoginScreen();
+            // Always open HomeScreen — login is prompted only at checkout/orders/profile
+            return const HomeScreen();
           },
         );
       },
